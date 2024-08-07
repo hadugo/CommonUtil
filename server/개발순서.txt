@@ -1,0 +1,405 @@
+
+/* ========================================== *
+ * /test/test.js
+ * ========================================== */
+const db = require('./models')
+
+async function main() {
+
+    async function getAll(dvo) {
+        const data = await db.EmpDepModel.findAll(dvo);
+
+        return data;
+    }
+
+    const data = await getAll();
+    console.log(data);
+    process.exit();
+
+}
+
+main();
+
+/* ========================================== *
+ * /.env
+ * ========================================== */
+DATABASE_HOST=localhost
+DATABASE_PORT=3306
+DATABASE_USER=root
+DATABASE_PASSWORD=
+DATABASE_NAME=DBEmployees
+DATABASE_MAX=10
+DATABASE_MIN=0
+DATABASE_ACQUIRE=30000
+DATABASE_IDLE=10000
+
+
+/* ========================================== *
+ * /config/config.js
+ * ========================================== *
+ * npm install dotenv  
+ * ========================================== */
+require('dotenv').config();
+const config = {
+  "development": {
+      "host": process.env.DATABASE_HOST,
+      "username": process.env.DATABASE_USER,
+      "password": process.env.DATABASE_PASSWORD, 
+      "database": process.env.DATABASE_NAME,
+      "dialect": "mysql",
+      "pool": {
+          "max": parseInt(process.env.DATABASE_MAX),
+          "min": parseInt(process.env.DATABASE_MIN),
+          "acquire": parseInt(process.env.DATABASE_ACQUIRE),
+          "idle": parseInt(process.env.DATABASE_IDLE)
+      },
+      "use_env_variable": null // 또는 필요한 경우 환경 변수 이름 설정
+  }
+}
+module.exports = config;
+
+
+/* ========================================== *
+ * models/index.js
+ * ========================================== */
+
+
+// const config = require(__dirname + '/../config/config.json')[env];
+const config = require(__dirname + '/../config/config.js')[env];
+
+/* ========================================== *
+ * .vscode\launch.json
+ * ========================================== */
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "2.서버 시작",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}\\bin\\www",
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ],
+            "sourceMaps": true
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "모델 테스트(main)",
+            "program": "${workspaceFolder}/test/test.js"
+        }
+    ]
+}
+
+
+
+
+// ===================================================================
+// 파일명 : \models\tbdepart.js
+// ===================================================================
+
+const Sequelize = require('sequelize');
+module.exports = function(sequelize, DataTypes) {
+  return sequelize.define('tbdepart', {
+    DPT_CODE: {
+      type: DataTypes.CHAR(4),
+      allowNull: false,
+      primaryKey: true
+    },
+    DPT_NAME: {
+      type: DataTypes.STRING(40),
+      allowNull: false,
+      unique: "dept_name"
+    }
+  }, {
+    sequelize,
+    tableName: 'tbdepart',
+    timestamps: false,
+    indexes: [
+      {
+        name: "PRIMARY",
+        unique: true,
+        using: "BTREE",
+        fields: [
+          { name: "DPT_CODE" },
+        ]
+      },
+      {
+        name: "dept_name",
+        unique: true,
+        using: "BTREE",
+        fields: [
+          { name: "DPT_NAME" },
+        ]
+      },
+    ]
+  });
+};
+
+// ===================================================================
+// 파일명 : \src\popup\getCodeList\getCodeListService.js
+// ===================================================================
+
+const path = require('path');
+const PROJECT_ROOT = process.cwd();
+const MODEL_PATH = path.join(PROJECT_ROOT, 'models');
+const db = require(MODEL_PATH);
+
+const findAll = async function(reqData){
+
+    const Model = {
+        'DPT' : db.tbdepart,
+    };
+
+    const {files, svo={}, dvo, value} = reqData;
+    const {searchDvo={}} = svo;
+
+    const model = Model[searchDvo.codeKind];
+    const whereCondition = {};
+
+    if(searchDvo.code){
+        whereCondition.DPT_CODE = {
+            [db.Sequelize.Op.like]: `%${searchDvo.code}%`
+        };
+    }
+
+    if(searchDvo.name){
+        whereCondition.DPT_NAME = {
+            [db.Sequelize.Op.like]: `%${searchDvo.name}%`
+        };
+    }
+
+    const codeList = await model.findAll({
+        attributes: [
+            ['DPT_CODE', 'code'],
+            ['DPT_NAME', 'name'],
+        ],
+        where: whereCondition,
+    });
+
+    const result = JSON.parse(JSON.stringify(codeList));
+    return result;
+};
+
+module.exports = {
+    findAll: findAll,
+};
+
+// ===================================================================
+// 파일명 : \src\popup\getCodeList\getCodeListController.js
+// ===================================================================
+const path = require('path');
+const PROJECT_ROOT = process.cwd();
+const SERVICE_PATH = path.join(PROJECT_ROOT, 'src', 'popup', 'getCodeList','getCodeListService');
+const getCodeListService = require(SERVICE_PATH)
+
+const getCodeList = async function(reqData){
+    const codeList = await getCodeListService.findAll(reqData);
+    return codeList;
+    
+}
+
+module.exports = [
+    { url : "/", method : getCodeList, }
+]
+
+
+// ===================================================================
+// 파일명 : \routes\routerList.js
+// ===================================================================
+const path = require('path');
+const PROJECT_ROOT = process.cwd();
+
+module.exports = [
+    {
+        // body : { 
+        //     svo : {
+        //         searchDvo : {
+        //             codeKind : 'DPT', 
+        //             code:'01', 
+        //             name:'ma'
+        //         },
+        //     }, 
+        // }
+        url : "/getCodeList",
+        controllerPath : path.join(PROJECT_ROOT, 'src', 'popup', 'getCodeList', 'getCodeListController'),
+    } 
+]
+
+
+// ===================================================================
+// 파일명 : \routes\getCommmonRouter.js
+// ===================================================================
+
+const express = require('express');
+const router = express.Router();
+const fs = require('fs');
+const path = require('path');
+const moment = require('moment');
+
+const multer = require('multer');
+
+const PROJECT_ROOT = process.cwd();
+const UPLOAD_PATH = path.join(PROJECT_ROOT, 'upload');
+if(fs.existsSync(UPLOAD_PATH)){
+    fs.mkdirSync(UPLOAD_PATH);
+}
+
+const fileFilter = function(req, file, callback){
+    if(file.fieldname == 'files' || file.fieldname == "svo"){
+        callback(null, true);
+    } else {
+        callback(null, false);
+    }
+}
+const upload = multer({storage : multer.memoryStorage(), fileFilter : fileFilter}).any();
+
+const getCommonRouter = function(controllerPath){
+
+    const controllerList = require(controllerPath);
+    for(const controller of controllerList){
+
+        router.route(controller.url)
+            .post(async (req, res) => {
+                console.log('baseUrl : ', req.baseUrl);
+                const result = {
+                    sucess : false,
+                    error : '',
+                    reqData : null,
+                    resData : null,
+                }
+
+                const PREFIX = moment().format('YYYYMMDDHHmmss');
+                try{
+                    await upload(req, res);
+                    
+                    if(!result.reqData) {
+                        result.reqData = {}
+                    }
+
+                    req.files.forEach(
+                        file => {
+                            if(file.fieldname === 'file'){
+                                const encodedFileName = Buffer.from(file.originalname, 'binary').toString('utf-8');
+                                const fileName = `${PREFIX}_${encodedFileName}`;
+                                const filePath = path.join(UPLOAD_PATH, fileName);
+                                fs.writeFileSync(filePath, file.buffer);
+                                const fileInfo = {
+                                    fieldName : file.fieldname,
+                                    srcName : file.originalname,
+                                    dstName : fileName,
+                                    fileSize : file.size,
+                                }
+                                if(!result.reqData.files) {
+                                    result.reqData.files = []
+                                }
+                                result.reqData.files.push(fileInfo);
+                            } else if(file.fieldname === 'svo'){
+                                const svoStr = file.buffer.toString('utf-8');
+                                const svo = JSON.parse(svoStr);
+                                result.reqData.svo = svo;
+                            }
+                        }
+                    );
+                    if(req.body.dvo){
+                        const dvoStr = req.body.dvo;
+                        const dvo = JSON.parse(dvoStr);
+                        result.reqData.dvo = dvoStr;
+                    }
+    
+                    if(req.body.value){
+                        const value = req.body.value;
+                        result.reqData.value = value;
+                    }
+    
+                    result.resData = await controller.method(result.reqData);
+                
+                    result.sucess = true;
+    
+                    res.json(result);
+                }catch(error){
+                    result.error = error.message;
+                    res.status(500).send(result);
+                }
+            })
+            
+            .get(async (req, res) => {
+                console.log('baseUrl : ', req.baseUrl);
+                console.log('params : ', req.params);
+                console.log('query : ', req.query);
+                const result = {
+                    sucess : false,
+                    error : null,
+                    reqData : null,
+                    resData : null,
+                }
+                // ======================================================
+                // Call Conroller
+                // ======================================================
+                try{
+                    const dvo = req.params && Object.keys(req.params).length > 0 ? req.params : req.query;
+                    const svo = { searchDvo : dvo }
+                    result.reqData = { svo : svo }
+                    const data = await controller.method(result.reqData);
+                    result.reqData = req.params;
+                    result.resData = data;
+                    res.json(result);
+                } catch(error){
+                    res.status(500).send(result);
+                }
+            })
+            
+    }
+
+    return router;
+}
+
+module.exports = getCommonRouter;
+
+
+// ===================================================================
+// 파일명 : \app.js
+// ===================================================================
+
+var cors = require('cors'); // CORS 패키지 가져오기
+app.use(cors()); // 기본 설정으로 CORS 허용
+
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
+
+
+const getCommonRouter = require('./routes/getCommonRouter');
+
+/* ------------------------------------------ *
+ * controllers 모든 파일을 읽어와 Routing하는 경우
+ * ------------------------------------------ *
+const controllersDir = path.join(__dirname, 'controllers');
+fs.readdirSync(controllersDir).forEach(file => {
+  const controller = require(path.join(controllersDir, file));
+  const routePath = controller.routePath || `/${path.basename(file, '.js').toLowerCase()}`;
+  const router = getCommonRouter(controller);
+  app.use(routePath, router);
+});
+ * ------------------------------------------ */
+
+
+/* ------------------------------------------ *
+ * routes/routerList.js 를 이용하는 경우
+ * ------------------------------------------ **/
+const routerList = require('./routes/routerList'); // routerList.js 가져오기
+routerList.forEach(route => {
+    const controllerPath = route.controllerPath;
+    const router = getCommonRouter(controllerPath); // getCommonRouter를 사용하여 라우터 생성
+    app.use(route.url, router); // 라우터를 Express 애플리케이션에 추가
+});
+/* ------------------------------------------ */
+
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+  next(createError(404));
+});
