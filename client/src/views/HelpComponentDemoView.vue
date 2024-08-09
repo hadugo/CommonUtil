@@ -18,9 +18,15 @@
         <span ref="btnClose" class="btnClose">x</span>
       </div>
       <h4 ref="codeHelpDialogTitle" class="title"></h4>
-      <div style="width: 400px; height:400px;">
-        <div ref="cntrCodeHelpDialogGrid" style="width: 100%; height:100%;"></div>
-      </div>
+      <ag-grid-vue
+        :ref="grdCodeHelpDialog"
+        :rowData="grdCodeHelpDialogRowData"
+        :columnDefs="grdCodeHelpDialogColDefs"
+        style="height: 500px"
+        class="ag-theme-quartz"
+        rowSelection="single"
+      >
+      </ag-grid-vue>
         <div class="buttonGroup">
         <button ref="btnOk">확인</button>
         <button ref="btnCancel">취소</button>
@@ -33,16 +39,34 @@
 
 import axios from 'axios'
 // npm install tabulator-tables
-import {TabulatorFull as Tabulator} from 'tabulator-tables';
+// import {TabulatorFull as Tabulator} from 'tabulator-tables';
 // npm install ag-grid-vue3 ag-grid-community
 // import { AgGridVue } from "ag-grid-vue3"; // Vue Data Grid Component
-import { createGrid  } from 'ag-grid-community'; // Ag-Grid API
+import { AgGridVue } from "ag-grid-vue3"; // Ag-Grid API
 
 export default {
 
+  
   name: 'HelpComponentDemoView',
 
   components: {
+    AgGridVue, // Add Vue Data Grid component
+  },
+
+  data : function() {
+    return {
+      grdCodeHelpDialog : null,
+      grdCodeHelpDialogRowData : [],
+      grdCodeHelpDialogColDefs : [
+        { field: "idx"      , flex: 1},
+        { field: "code"     , flex: 1},
+        { field: "name"     , flex: 1},
+        { field: "codeName" , flex: 2},
+      ],
+    }
+  },
+  props: {
+  
   },
 
   mounted : function() {
@@ -88,14 +112,6 @@ export default {
     this.helpComponentInit(param)
   },
 
-  data : function() {
-    return {
-    }
-  },
-  props: {
-   
-  },
-
   methods: {
     helpComponentInit : async function(param){
       // --------------------------------------------------------------
@@ -103,42 +119,6 @@ export default {
       // --------------------------------------------------------------
       let {codeType, edCode, edName, edCodeName, btnSrch, codeList, gridType, callback} = param
 
-      // ------------------------ Create Grid -------------------------
-      let codeHelpDialogGrid = null
-      if(gridType == 'agGrid'){
-        // -------------------------- agGrud --------------------------
-        this.$refs.cntrCodeHelpDialogGrid.className = 'ag-theme-quartz'
-        codeHelpDialogGrid = await new Promise((resolve)=>{
-          const gridOptions = {
-            rowData: [],
-            rowSelection: "single",
-            columnDefs: [
-              { field: "idx"      , flex: 1},
-              { field: "code"     , flex: 1},
-              { field: "name"     , flex: 1},
-              { field: "codeName" , flex: 2},
-            ],
-            onGridReady: function(params) {
-              resolve(params.api)
-            }
-          };
-          createGrid(this.$refs.cntrCodeHelpDialogGrid, gridOptions);
-        })
-      
-      } else if( gridType == 'Tabulator'){
-        // ------------------------ Tabulator -------------------------
-        codeHelpDialogGrid = new Tabulator(this.$refs.cntrCodeHelpDialogGrid, {
-            data : [],
-            layout:"fitDataFill",
-            columns:[
-              {title:"idx"      , field:"idx"     ,},
-              {title:"code"     , field:"code"    ,},
-              {title:"name"     , field:"name"    ,},
-              {title:"codeName" , field:"codeName",},
-            ],
-        });
-      }
-      
       // --------------------------------------------------------------
       // 코드 조회 함수 선언
       // --------------------------------------------------------------
@@ -218,16 +198,15 @@ export default {
 
         // ------------------- Show DataList on Grid --------------------
         if(gridType == 'agGrid'){
+          this.grdCodeHelpDialogRowData = JSON.parse(JSON.stringify(filteredCodeList))
           // -------------------------- agGrud --------------------------
-          codeHelpDialogGrid.setGridOption("rowData", filteredCodeList);
-        } else if( gridType == 'Tabulator'){
-          codeHelpDialogGrid.replaceData(filteredCodeList)
-        }
+        } //else if( gridType == 'Tabulator'){}
         
         // ----------------------- Declare Event ------------------------
 
         // grid double click event
-        codeHelpDialogGrid.addEventListener('rowDoubleClicked', (event) => {
+        debugger;
+        this.grdCodeHelpDialog.addEventListener('rowDoubleClicked', (event) => {
           result = {
             btn : "ok",
             data : event.data
@@ -263,7 +242,7 @@ export default {
               codeName : "",
             }
           }
-          const selectedDatas = codeHelpDialogGrid.getSelectedRows()
+          const selectedDatas = this.grdCodeHelpDialog.getSelectedRows()
           console.log(selectedDatas.length)
           if(selectedDatas.length > 0){
             result.data = selectedDatas[0]
