@@ -41,8 +41,8 @@ REM =======================================
 REM =======================================
 REM npm 모듈 설치
 REM =======================================
-       
        call npm install morgan sequelize dotenv mysql2 sequelize-cli sequelize-auto cors multer fs path child_process util cookie-parser 
+       call npm npm install sass sass-loader --save-dev
        echo npm 모듈 설치 완료
 
 

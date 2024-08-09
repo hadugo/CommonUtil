@@ -1,37 +1,17 @@
 
-/* ========================================== *
- * /test/test.js
- * ========================================== */
-const db = require('./models')
-
-async function main() {
-
-    async function getAll(dvo) {
-        const data = await db.EmpDepModel.findAll(dvo);
-
-        return data;
-    }
-
-    const data = await getAll();
-    console.log(data);
-    process.exit();
-
-}
-
-main();
-
-/* ========================================== *
- * /.env
- * ========================================== */
+# ========================================== #
+# /.env
+# ========================================== #
 DATABASE_HOST=localhost
 DATABASE_PORT=3306
 DATABASE_USER=root
 DATABASE_PASSWORD=
-DATABASE_NAME=DBEmployees
+DATABASE_NAME=DBCommCode
 DATABASE_MAX=10
 DATABASE_MIN=0
 DATABASE_ACQUIRE=30000
 DATABASE_IDLE=10000
+
 
 
 /* ========================================== *
@@ -67,6 +47,185 @@ module.exports = config;
 // const config = require(__dirname + '/../config/config.json')[env];
 const config = require(__dirname + '/../config/config.js')[env];
 
+
+
+
+// ===================================================================
+// \models\ 자동 생성
+// ===================================================================
+models\init-models.js
+models\tbcommcd.js
+
+
+
+
+// ===================================================================
+// 파일명 : \src\getCodeList\getCodeListService.js
+// ===================================================================
+
+const path = require('path');
+const PROJECT_ROOT = process.cwd();
+const MODEL_PATH = path.join(PROJECT_ROOT, 'models');
+const db = require(MODEL_PATH);
+
+const findAll = async function(reqData){
+
+    const Model = {
+        'DEPT' : db.tbcommcd,
+        'TITL' : db.tbcommcd,
+        'EMPT' : db.tbcommcd,
+        '' : db.tbcommcd,
+    };
+
+    const {files, svo={}, dvo, value} = reqData
+    const {searchDvo={}} = svo
+    const {codeType = '', code='', name=''} = searchDvo
+
+    const model = Model[codeType];
+    const whereCondition = {};
+
+    if(codeType){
+        whereCondition.TYPE = codeType
+    }
+
+    if(code){
+        whereCondition.DPT_CODE = {
+            [db.Sequelize.Op.like]: `%${code}%`
+        };
+    }
+
+    if(name){
+        whereCondition.DPT_NAME = {
+            [db.Sequelize.Op.like]: `%${name}%`
+        };
+    }
+
+    const rs = await model.findAll({
+        attributes: [
+            ['CODE', 'code'],
+            ['NAME', 'name'],
+            [ db.Sequelize.fn('CONCAT', '[ ', db.Sequelize.col('CODE'),  ' ] ', db.Sequelize.col('NAME')), 'codeName'],
+        ],
+        where: whereCondition,
+    });
+
+    const result = rs.map(item => item.toJSON())
+    return result;
+};
+
+module.exports = {
+    findAll: findAll,
+};
+
+
+
+// ===================================================================
+// 파일명 : \src\getCodeList\getCodeListController.js
+// ===================================================================
+const path = require('path');
+const PROJECT_ROOT = process.cwd();
+const SERVICE_PATH = path.join(PROJECT_ROOT, 'src', 'getCodeList','getCodeListService');
+const getCodeListService = require(SERVICE_PATH)
+
+const getCodeList = async function(reqData){
+    const codeList = await getCodeListService.findAll(reqData);
+    return codeList;
+    
+}
+
+module.exports = [
+    { url : "/", method : getCodeList, }
+]
+
+
+
+
+
+/* ========================================== *
+ * /test/test.js
+ * ========================================== */
+
+const path = require('path');
+const PROJECT_ROOT = process.cwd();
+const MODEL_PATH = path.join(PROJECT_ROOT, 'models');
+const db = require(MODEL_PATH)
+
+const SERVICE_PATH = path.join(PROJECT_ROOT, 'src', 'getCodeList','getCodeListService');
+const getCodeListService = require(SERVICE_PATH)
+
+const CONTROLLER_PATH = path.join(PROJECT_ROOT, 'src', 'getCodeList','getCodeListController');
+const getCodeListController = require(CONTROLLER_PATH)
+
+async function main() {
+
+    /* -------------------------------------- *
+     * 모델 테스트 
+     * -------------------------------------- */
+    {
+        console.log(' ----------------------- ');
+        console.log(' 모델 테스트 ');
+        async function getAll() {
+            const rs = await db.tbcommcd.findAll({
+                attributes: [
+                    ['CODE', 'code'],
+                    ['NAME', 'name'],
+                    [ db.Sequelize.fn('CONCAT', '[ ', db.Sequelize.col('CODE'),  ' ] ', db.Sequelize.col('NAME')), 'codeName'],
+                ],
+            });
+
+            const codeList = rs.map(item => item.toJSON())
+            const result = JSON.parse(JSON.stringify(codeList));
+            return result;
+        }
+
+        const data = await getAll();
+        console.log(data);
+    }
+
+    /* -------------------------------------- *
+     * 서비스 테스트 
+     *--------------------------------------- */
+    {
+        console.log(' --------------------------- ');
+        console.log(' 서비스 테스트 ');
+        const param = {
+            svo : {
+                searchDvo : {
+                    codeType : 'DEPT'
+                }
+            }
+        }
+        const data = await getCodeListService.findAll(param)
+        console.log(data);
+    }
+
+    /* -------------------------------------- *
+     * 컨트롤러 테스트 
+     *--------------------------------------- */
+    {
+        console.log(' --------------------------- ');
+        console.log(' 컨트롤러 테스트 ');
+        const param = {
+            svo : {
+                searchDvo : {
+                    codeType : 'DEPT'
+                }
+            }
+        }
+        const data = await getCodeListController[0].method(param)
+        console.log(data);
+    }
+    process.exit();
+
+}
+
+main();
+
+
+
+
+
+
 /* ========================================== *
  * .vscode\launch.json
  * ========================================== */
@@ -98,115 +257,6 @@ const config = require(__dirname + '/../config/config.js')[env];
 
 
 
-
-// ===================================================================
-// 파일명 : \models\tbdepart.js
-// ===================================================================
-
-const Sequelize = require('sequelize');
-module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('tbdepart', {
-    DPT_CODE: {
-      type: DataTypes.CHAR(4),
-      allowNull: false,
-      primaryKey: true
-    },
-    DPT_NAME: {
-      type: DataTypes.STRING(40),
-      allowNull: false,
-      unique: "dept_name"
-    }
-  }, {
-    sequelize,
-    tableName: 'tbdepart',
-    timestamps: false,
-    indexes: [
-      {
-        name: "PRIMARY",
-        unique: true,
-        using: "BTREE",
-        fields: [
-          { name: "DPT_CODE" },
-        ]
-      },
-      {
-        name: "dept_name",
-        unique: true,
-        using: "BTREE",
-        fields: [
-          { name: "DPT_NAME" },
-        ]
-      },
-    ]
-  });
-};
-
-// ===================================================================
-// 파일명 : \src\popup\getCodeList\getCodeListService.js
-// ===================================================================
-
-const path = require('path');
-const PROJECT_ROOT = process.cwd();
-const MODEL_PATH = path.join(PROJECT_ROOT, 'models');
-const db = require(MODEL_PATH);
-
-const findAll = async function(reqData){
-
-    const Model = {
-        'DPT' : db.tbdepart,
-    };
-
-    const {files, svo={}, dvo, value} = reqData;
-    const {searchDvo={}} = svo;
-
-    const model = Model[searchDvo.codeKind];
-    const whereCondition = {};
-
-    if(searchDvo.code){
-        whereCondition.DPT_CODE = {
-            [db.Sequelize.Op.like]: `%${searchDvo.code}%`
-        };
-    }
-
-    if(searchDvo.name){
-        whereCondition.DPT_NAME = {
-            [db.Sequelize.Op.like]: `%${searchDvo.name}%`
-        };
-    }
-
-    const codeList = await model.findAll({
-        attributes: [
-            ['DPT_CODE', 'code'],
-            ['DPT_NAME', 'name'],
-        ],
-        where: whereCondition,
-    });
-
-    const result = JSON.parse(JSON.stringify(codeList));
-    return result;
-};
-
-module.exports = {
-    findAll: findAll,
-};
-
-// ===================================================================
-// 파일명 : \src\popup\getCodeList\getCodeListController.js
-// ===================================================================
-const path = require('path');
-const PROJECT_ROOT = process.cwd();
-const SERVICE_PATH = path.join(PROJECT_ROOT, 'src', 'popup', 'getCodeList','getCodeListService');
-const getCodeListService = require(SERVICE_PATH)
-
-const getCodeList = async function(reqData){
-    const codeList = await getCodeListService.findAll(reqData);
-    return codeList;
-    
-}
-
-module.exports = [
-    { url : "/", method : getCodeList, }
-]
 
 
 // ===================================================================
