@@ -19,9 +19,11 @@
       </div>
       <h4 ref="codeHelpDialogTitle" class="title"></h4>
       <ag-grid-vue
-        :ref="grdCodeHelpDialog"
+        ref="grdCodeHelpDialog"
         :rowData="grdCodeHelpDialogRowData"
         :columnDefs="grdCodeHelpDialogColDefs"
+        :gridOptions="grdCodeHelpDialogOptions"
+        @grid-ready="grdCodeHelpDialogReady"
         style="height: 500px"
         class="ag-theme-quartz"
         rowSelection="single"
@@ -55,7 +57,8 @@ export default {
 
   data : function() {
     return {
-      grdCodeHelpDialog : null,
+      grdCodeHelpDialogApi : null,
+      grdCodeHelpDialogOptions : {},
       grdCodeHelpDialogRowData : [],
       grdCodeHelpDialogColDefs : [
         { field: "idx"      , flex: 1},
@@ -113,6 +116,9 @@ export default {
   },
 
   methods: {
+    grdCodeHelpDialogReady : function(param){
+      this.grdCodeHelpDialogApi = param.api;
+    },
     helpComponentInit : async function(param){
       // --------------------------------------------------------------
       // 파라미터 준비
@@ -206,13 +212,17 @@ export default {
 
         // grid double click event
         debugger;
-        this.grdCodeHelpDialog.addEventListener('rowDoubleClicked', (event) => {
+        const rowDblClick =  (event) => {
+          debugger;
           result = {
             btn : "ok",
             data : event.data
           }
           onSelected(result)
-        })
+        }
+        debugger;
+        this.grdCodeHelpDialogApi.removeEventListener('rowDoubleClicked', rowDblClick);
+        this.grdCodeHelpDialogApi.addEventListener('rowDoubleClicked',rowDblClick)
 
         // Close Button Click Event
         this.$refs.btnClose.addEventListener('click', ()=>{
@@ -242,7 +252,7 @@ export default {
               codeName : "",
             }
           }
-          const selectedDatas = this.grdCodeHelpDialog.getSelectedRows()
+          const selectedDatas = this.$refs.grdCodeHelpDialog.getSelectedRows()
           console.log(selectedDatas.length)
           if(selectedDatas.length > 0){
             result.data = selectedDatas[0]
