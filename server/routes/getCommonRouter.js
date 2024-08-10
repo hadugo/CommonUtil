@@ -139,3 +139,104 @@ const getCommonRouter = function(controllerPath){
 }
 
 module.exports = getCommonRouter;
+
+
+/*
+// ===================================================================
+// SAMPLE
+// ===================================================================
+
+// ===================================================================
+// 파일명 : \src\getCodeList\getCodeListService.js
+// ===================================================================
+
+const path = require('path');
+const PROJECT_ROOT = process.cwd();
+const MODEL_PATH = path.join(PROJECT_ROOT, 'models');
+const db = require(MODEL_PATH);
+
+const findAll = async function(reqData){
+    ....................
+     생략
+    ....................
+    return result;
+};
+
+module.exports = {
+    findAll: findAll,
+};
+
+
+// ===================================================================
+// 파일명 : \src\getCodeList\getCodeListController.js
+// ===================================================================
+const path = require('path');
+const PROJECT_ROOT = process.cwd();
+const SERVICE_PATH = path.join(PROJECT_ROOT, 'src', 'getCodeList','getCodeListService');
+const getCodeListService = require(SERVICE_PATH)
+
+const getCodeList = async function(reqData){
+    const result = await getCodeListService.findAll(reqData);
+    return result;
+    
+}
+
+module.exports = [
+    { url : "/", method : getCodeList, }
+]
+
+// ===================================================================
+// 파일명 : \routes\routerList.js
+// ===================================================================
+const path = require('path');
+const PROJECT_ROOT = process.cwd();
+
+module.exports = [
+    {
+        // body : { 
+        //     svo : {
+        //         searchDvo : {
+        //             codeKind : 'DPT', 
+        //             code:'01', 
+        //             name:'ma'
+        //         },
+        //     }, 
+        // }
+        url : "/getCodeList",
+        controllerPath : path.join(PROJECT_ROOT, 'src', 'getCodeList', 'getCodeListController'),
+    } 
+]
+
+
+// ===================================================================
+// 파일명 : \app.js
+// ===================================================================
+var cors = require('cors'); // CORS 패키지 가져오기
+const getCommonRouter = require('./routes/getCommonRouter');
+
+/* ------------------------------------------ *
+ * controllers 모든 파일을 읽어와 Routing하는 경우
+ * ------------------------------------------ *
+const controllersDir = path.join(__dirname, 'controllers');
+fs.readdirSync(controllersDir).forEach(file => {
+  const controller = require(path.join(controllersDir, file));
+  const routePath = controller.routePath || `/${path.basename(file, '.js').toLowerCase()}`;
+  const router = getCommonRouter(controller);
+  app.use(routePath, router);
+});
+ * ------------------------------------------ */
+
+
+/* ------------------------------------------ *
+ * routes/routerList.js 를 이용하는 경우
+ * ------------------------------------------ *
+const routerList = require('./routes/routerList'); // routerList.js 가져오기
+routerList.forEach(route => {
+    const controllerPath = route.controllerPath;
+    const router = getCommonRouter(controllerPath); // getCommonRouter를 사용하여 라우터 생성
+    app.use(route.url, router); // 라우터를 Express 애플리케이션에 추가
+});
+/* ------------------------------------------ *
+
+
+*/

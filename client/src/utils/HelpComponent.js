@@ -85,9 +85,6 @@ export default {
                         }
                     }
                 )
-                if(filteredCodeList.length == 0){
-                    filteredCodeList = JSON.parse(JSON.stringify(codeList))
-                }
                 
                 // --------------------------------------------------------------
                 // 코드 조회 함수 선언 - 조건에 맞는 코드가 1개이면 출력 후 끝
@@ -104,14 +101,25 @@ export default {
                     onSelected(result)
                     return result
                 }
-
-                filteredCodeList.forEach((item, index) => {
-                    item.idx = index; // 원본 배열의 각 항목에 idx 속성 추가
-                });
+                
+                // --------------------------------------------------------------
+                // 코드 조회 함수 선언 - 조건에 맞는 코드가 없으면 모든 코드 목록
+                // --------------------------------------------------------------
+                if(filteredCodeList.length == 0){
+                    edCode.value = ''
+                    edName.value = ''
+                    edCodeName.value = ''
+                    filteredCodeList = JSON.parse(JSON.stringify(codeList))
+                }
 
                 // --------------------------------------------------------------
                 // 코드 조회 함수 선언 - 조건에 맞는 코드가 여러개이면 그리드에 목록 출력
                 // --------------------------------------------------------------
+
+                filteredCodeList.forEach((item, index) => {
+                    item.idx = index; // 원본 배열의 각 항목에 idx 속성 추가
+                });
+                
                 const columnDefs=[
                     { field: 'idx'      , flex: 1},
                     { field: 'code'     , flex: 1},
@@ -122,7 +130,7 @@ export default {
                 grid.$el.classList.add('ag-theme-quartz')
                 grid.api.setGridOption("rowSelection", 'single')
                 grid.api.setGridOption("columnDefs", columnDefs)
-                grid.api.setGridOption("rowData", filteredCodeList)
+                grid.api.setGridOption("rowData",  JSON.parse(JSON.stringify(filteredCodeList)))
                 
 
                 // --------------------------------------------------------------
