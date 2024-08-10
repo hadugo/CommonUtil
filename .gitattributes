@@ -1,1 +1,3 @@
 server/개발순서.txt text eol=lf
+client/src/views/HelpComponentDemoView.vue text eol=lf
+client/vue.config.js text eol=lf
