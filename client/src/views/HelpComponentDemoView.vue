@@ -209,20 +209,16 @@ export default {
         } //else if( gridType == 'Tabulator'){}
         
         // ----------------------- Declare Event ------------------------
-
         // grid double click event
-        debugger;
         const rowDblClick =  (event) => {
-          debugger;
           result = {
             btn : "ok",
             data : event.data
           }
           onSelected(result)
+          event.api.removeEventListener('rowDoubleClicked', rowDblClick)
         }
-        debugger;
-        this.grdCodeHelpDialogApi.removeEventListener('rowDoubleClicked', rowDblClick);
-        this.grdCodeHelpDialogApi.addEventListener('rowDoubleClicked',rowDblClick)
+        this.grdCodeHelpDialogApi.addEventListener('rowDoubleClicked', rowDblClick)
 
         // Close Button Click Event
         this.$refs.btnClose.addEventListener('click', ()=>{
