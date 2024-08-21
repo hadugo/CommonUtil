@@ -1,19 +1,36 @@
 
 <template>
   <div>
-    <div>
+    <div style="text-align: left">
        부서 : 
       <input ref="edDeptCodeRef">
       <input ref="edDeptNameRef">
       <input ref="edDeptCodeNameRef" type="hidden">
       <button ref="btnDeptSrchRef">...</button>
     </div>
-    <div>
+    <div style="text-align: left">
       직급 : 
       <input ref="edTitlCodeRef" type="hidden">
       <input ref="edTitlNameRef" type="hidden">
       <input ref="edTitlCodeNameRef">
       <button ref="btnTitlSrchRef">...</button>
+    </div>
+    <div style="text-align: left">
+      <p>[ 기능설명 ]</p>
+      <ul><b>부서</b>
+        <li><b>[코드] , [이름], [조회]</b>버튼으로 구성</li>
+        <li><b>[코드]</b>입력란에서 [enter]키를 입력하면 코드 목록 조회</li>
+        <li><b>[코드]</b>입력란에서 코드의 일부를 입력하고 [enter]키를 입력하면 입력한 글자가 포함된 코드 목록 조회</li>
+        <li><b>[이름]</b>입력란에서 [enter]키를 입력하면 코드 목록 조회</li>
+        <li><b>[코드]</b>입력란에서 코드의 일부를 입력하고 [enter]키를 입력하면 입력한 글자가 포함된 코드 목록 조회</li>
+      </ul>
+      <ul><b>직급</b>
+        <li><b>"[ D0010 ] 사원"</b>과 같은 표현식의 입력란과 <b>조회버튼</b>으로 구성</li>
+        <li><b>[코드]</b>입력란에서 [enter]키를 입력하면 코드 목록 조회</li>
+        <li><b>[코드]</b>입력란에서 코드의 일부를 입력하고 [enter]키를 입력하면 입력한 글자가 포함된 코드 목록 조회</li>
+        <li><b>[이름]</b>입력란에서 [enter]키를 입력하면 코드 목록 조회</li>
+        <li><b>[코드]</b>입력란에서 코드의 일부를 입력하고 [enter]키를 입력하면 입력한 글자가 포함된 코드 목록 조회</li>
+      </ul>
     </div>
     <dialog class="modal" ref="codeHelpDialog">
       <div class="systemMenu">
@@ -59,8 +76,13 @@ export default {
   mounted : function() {
     let param = {}
     param = {
-      codeList  : null,
-      postUrl : 'http://localhost:3000/getCodeList/DEPT', // 코드 조회를 위한 URL
+      codeList  : [
+        { code : "D011", name : "관리부" },
+        { code : "D012", name : "영업부" },
+        { code : "D021", name : "개발부" },
+        { code : "D022", name : "생산부" },
+      ],
+      postUrl : 'http://localhost:3000/getCodeList/DEPT', // codeList가 없는 경우 코드 조회를 위한 URL
       inputObjs : {
         edCode    : this.$refs.edDeptCodeRef, 
         edName    : this.$refs.edDeptNameRef, 
@@ -85,7 +107,12 @@ export default {
     this.$helpComponent.initial(param)
     
     param = {
-      codeList  : null,
+      codeList  : [
+        { code : "T011", name : "대표" },
+        { code : "T012", name : "부장" },
+        { code : "T021", name : "과장" },
+        { code : "T022", name : "사원" },
+      ],
       postUrl : 'http://localhost:3000/getCodeList?codeType=TITL',
       postParam : {codeType  : 'TITL', },
       inputObjs : {

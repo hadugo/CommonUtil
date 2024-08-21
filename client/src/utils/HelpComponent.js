@@ -200,6 +200,9 @@ export default {
 
                     filteredCodeList.forEach((item, index) => {
                         item.idx = index; // 원본 배열의 각 항목에 idx 속성 추가
+                        if(!item.codeName){
+                            item.codeName = `[ ${item.code} ] ${item.name} `
+                        }
                     });
 
                     return filteredCodeList;
