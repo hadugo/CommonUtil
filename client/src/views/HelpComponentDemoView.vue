@@ -2,12 +2,14 @@
 <template>
   <div>
     <div>
+       부서 : 
       <input ref="edDeptCodeRef">
       <input ref="edDeptNameRef">
       <input ref="edDeptCodeNameRef" type="hidden">
       <button ref="btnDeptSrchRef">...</button>
     </div>
     <div>
+      직급 : 
       <input ref="edTitlCodeRef" type="hidden">
       <input ref="edTitlNameRef" type="hidden">
       <input ref="edTitlCodeNameRef">
@@ -57,8 +59,8 @@ export default {
   mounted : function() {
     let param = {}
     param = {
-      codeType  : 'DEPT', 
       codeList  : null,
+      postUrl : 'http://localhost:3000/getCodeList/DEPT', // 코드 조회를 위한 URL
       inputObjs : {
         edCode    : this.$refs.edDeptCodeRef, 
         edName    : this.$refs.edDeptNameRef, 
@@ -80,11 +82,12 @@ export default {
       },
 
     }
-    this.$helpComponentInit(param)
+    this.$helpComponent.initial(param)
     
     param = {
-      codeType  : 'TITL', 
       codeList  : null,
+      postUrl : 'http://localhost:3000/getCodeList?codeType=TITL',
+      postParam : {codeType  : 'TITL', },
       inputObjs : {
         edCode    : this.$refs.edTitlCodeRef, 
         edName    : this.$refs.edTitlNameRef, 
@@ -106,7 +109,7 @@ export default {
       },
 
     }
-    this.$helpComponentInit(param)
+    this.$helpComponent.initial(param)
   },
 
   methods: {

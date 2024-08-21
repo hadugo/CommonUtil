@@ -1,327 +1,416 @@
 
 import axios from 'axios'
-export const helpComponentInit = async function(param) {
-            
-    // --------------------------------------------------------------
-    // 파라미터 준비
-    // --------------------------------------------------------------
-    const {codeType, callback, inputObjs, popupObjs} = param
-    const {edCode, edName, edCodeName, btnSrch} = inputObjs
-    const {popup, popupTitle, grid, btnClose, btnOk, btnCancel} = popupObjs
-    let codeList = param.codeList
+export default {
+    install(app){
 
-    // --------------------------------------------------------------
-    // 코드 조회 함수 선언
-    // --------------------------------------------------------------
-    const findCode = async (param)=>{
+        const helpComponent =  {
 
-        const {codeType, edCode, edName, edCodeName, codeList} = param
+            initial : async function(args) {
 
-        const codeTypeName = {
-            'DEPT' : '부서코드',
-            'TITL' : '직급코드',
-            'EMPT' : '사원코드',
-        }
-
-        const paramCode     = edCode.value      ? edCode.value.toUpperCase()      : ''
-        const paramName     = edName.value      ? edName.value.toUpperCase()      : ''
-        const paramCodeName = edCodeName.value  ? edCodeName.value.toUpperCase()  : ''
-        let result = {
-            code      : '',
-            name      : '',
-            codeName  : '',
-        }
-        
-        // --------------------------------------------------------------
-        // 코드 조회 함수 선언 - 최종 결과를 돌려주는 공통함수 선언
-        // --------------------------------------------------------------
-        const onSelected = (param) => {
-
-            if(popup.open){
-                popup.close()
-            }
-            
-            const {btn, data} = param
-            if(btn == "ok")  {
-                edCode.value = data.code
-                edName.value = data.name
-                edCodeName.value = data.codeName
-            }
-            if(callback){
-                callback(param)
-            }
-            
-            return param
-        }
-        
-        // --------------------------------------------------------------
-        // 코드 조회 함수 선언 - 코드목록에서 조건에 맞는 코드를 검사하여 목록 재구성
-        // --------------------------------------------------------------
-        let filteredCodeList = codeList.filter(
-            (ele) => {
-                const eleCode     = ele.code      ? ele.code.toUpperCase()      : ''
-                const eleName     = ele.name      ? ele.name.toUpperCase()      : ''
-                const eleCodeName = ele.codeName  ? ele.codeName.toUpperCase()  : ''
-                if(paramCode){
-                    const idx = eleCode.indexOf(paramCode)
-                    const result = idx >= 0
-                    return result
+                /*
+                args = {
+                    codeList,        // 코드리스트
+                    postUrl,         // 코드리스트 조회 URL
+                    inputObjs : {
+                        edCode,      // 코드 입력 테그 객체
+                        edName,      // 이름 입력 테그 객체
+                        edCodeName,  // "[ 코드 ] 이름" 테그 객체
+                        btnSrch      // 조회버튼 객체
+                    }, 
+                    popupObjs : {
+                        popup,       // dialog테그 객체
+                        grid,        // 그리드 객체
+                        btnClose,    // 팝업창의 우측 상단 [x] 버튼 객체
+                        btnOk,       // 팝업창의 [선택]버튼 객체
+                        btnCancel    // 팝업창의 [취소]버튼 객채
+                    }, 
+                    callback,        // 코드 선택 후 처리할 함수
                 }
-                if(paramName){
-                    const idx = eleName.indexOf(paramName)
-                    const result = idx >= 0
-                    return result
+                */
+
+                // //////////////////////////////////////////////////////////////
+                //
+                // 각종 함수 선언
+                //
+                // //////////////////////////////////////////////////////////////
+
+                let codeList = null
+                
+                let getCodeList = async function(){
+                    let codeList = null
+                    if(args.codeList){
+                        return args.codeList
+                    }
+                    const formData = new FormData()
+                    const svo = {
+                        searchDvo : args.postParam,
+                    }
+                    const svoStr = JSON.stringify(svo)
+                    formData.append('svo', new Blob([svoStr], {type : 'application/json'}), 'svo')
+                    try{
+                        const response = await axios.get(args.postUrl)
+                        codeList = response.data.resData
+                    } catch(error){
+                        console.log(error)
+                        return null // 오류 발
+                    }
+                    return codeList
                 }
-                if(paramCodeName){
-                    const idx = eleCodeName.indexOf(paramCodeName)
-                    const result = idx >= 0
-                    return result
+
+                // ..............................................................
+                // 팝업창에서 사용할 각종 이벤트 함수 선언
+                // ..............................................................
+                const popupEvents = {
+                    onSelected : (param /* {btn, data={code, name, codeName}} */) => {
+                        if(args.popupObjs.popup.open){
+                            args.popupObjs.popup.close()
+                        }
+                        
+                        if(param.btn == "ok")  {
+                            args.inputObjs.edCode.value = param.data.code
+                            args.inputObjs.edName.value = param.data.name
+                            args.inputObjs.edCodeName.value = param.data.codeName
+                        }
+                        if(args.callback){
+                            args.callback(param, args)
+                        }
+                    },
+                    rowDblClick : (event) => {
+                        popupEvents.clearEvents()
+                        const result = {
+                            btn : "ok",
+                            data : event.data,
+                        }
+                        popupEvents.onSelected(result)
+                    },
+                    
+                    onBtnCloseClick : ()=>{
+                        popupEvents.clearEvents()
+                        const result = {
+                            btn  : "close",
+                            data : {
+                                code : '',
+                                name : '',
+                                codeName : '',
+                            },
+                            callback : args.callback
+                        }
+                        popupEvents.onSelected(result)
+                    },
+
+                    onBtnCancelClick : ()=>{
+                        popupEvents.clearEvents()
+                        const result = {
+                            btn  : "cancel",
+                            data : {
+                                code : '',
+                                name : '',
+                                codeName : '',
+                            },
+                            callback : args.callback
+                        }
+                        popupEvents.onSelected(result)
+                    },
+                    
+                    onBtnOkClick : ()=>{
+                        popupEvents.clearEvents()
+                        const result = {
+                            btn  : "ok",
+                            data : {
+                                code : "",
+                                name : "",
+                                codeName : "",
+                            },
+                        }
+                        const selectedDatas = args.popupObjs.grid.api.getSelectedRows()
+                        if(selectedDatas.length > 0){
+                            result.data = selectedDatas[0]
+                        }
+                        popupEvents.onSelected(result)
+                    },
+                    
+                    clearEvents : ()=>{
+                        args.popupObjs.btnClose.removeEventListener('click', popupEvents.onBtnCloseClick)
+                        args.popupObjs.btnCancel.removeEventListener('click', popupEvents.onBtnCancelClick)
+                        args.popupObjs.btnOk.removeEventListener('click', popupEvents.onBtnOkClick)
+                        args.popupObjs.grid.api.removeEventListener('rowDoubleClicked' , popupEvents.rowDblClick)
+                    },
+
                 }
+
+                // ..............................................................
+                // 팝업창에서 사용할 그리드 생성 함수 선언
+                // ..............................................................
+                const createGrid = function(filteredCodeList){
+                    const columnDefs=[
+                        { field: 'idx'      , flex: 1},
+                        { field: 'code'     , flex: 1},
+                        { field: 'name'     , flex: 1},
+                        { field: 'codeName' , flex: 2},
+                    ]
+                    args.popupObjs.grid.$el.className = ''
+                    args.popupObjs.grid.$el.classList.add('ag-theme-quartz')
+                    args.popupObjs.grid.api.setGridOption("rowSelection", 'single')
+                    args.popupObjs.grid.api.setGridOption("columnDefs", columnDefs)
+                    args.popupObjs.grid.api.setGridOption("rowData",  JSON.parse(JSON.stringify(filteredCodeList)))
+                    args.popupObjs.grid.api.addEventListener('rowDoubleClicked', popupEvents.rowDblClick)
+                }
+                // ..............................................................
+                // 팝업창에 사용할 코드 목록 필터링 함수 선언
+                // ..............................................................
+                const findCode = async (param /* {code, name, codeName, codeList} */ )=>{
+                    if(!codeList) return []
+                    if(codeList.length == 0) return []
+                    const paramCode     = param.code      ? param.code.toUpperCase()      : ''
+                    const paramName     = param.name      ? param.code.toUpperCase()      : ''
+                    const paramCodeName = param.codeName  ? param.code.toUpperCase()  : ''
+                    // --------------------------------------------------------------
+                    // 코드 조회 함수 선언 - 코드목록에서 조건에 맞는 코드를 검사하여 목록 재구성
+                    // --------------------------------------------------------------
+                    let filteredCodeList = codeList.filter(
+                        (ele) => {
+                            const eleCode     = ele.code      ? ele.code.toUpperCase()      : ''
+                            const eleName     = ele.name      ? ele.name.toUpperCase()      : ''
+                            const eleCodeName = ele.codeName  ? ele.codeName.toUpperCase()  : ''
+                            if(paramCode){
+                                const idx = eleCode.indexOf(paramCode)
+                                const result = idx >= 0
+                                return result
+                            }
+                            if(paramName){
+                                const idx = eleName.indexOf(paramName)
+                                const result = idx >= 0
+                                return result
+                            }
+                            if(paramCodeName){
+                                const idx = eleCodeName.indexOf(paramCodeName)
+                                const result = idx >= 0
+                                return result
+                            }
+                        }
+                    )
+                    
+                    
+                    // --------------------------------------------------------------
+                    // 코드 조회 함수 선언 - 조건에 맞는 코드가 없으면 모든 코드 목록
+                    // --------------------------------------------------------------
+                    if(filteredCodeList.length == 0){
+                        filteredCodeList = JSON.parse(JSON.stringify(param.codeList))
+                    }
+
+                    filteredCodeList.forEach((item, index) => {
+                        item.idx = index; // 원본 배열의 각 항목에 idx 속성 추가
+                    });
+
+                    return filteredCodeList;
+                    
+                }
+
+                // ..............................................................
+                // 팝업창을 열기 위한 함수 선언
+                // ..............................................................
+                const showModal = function(filteredCodeList){
+                    if(!filteredCodeList) return
+                    if(filteredCodeList.length == 0) return
+                    // --------------------------------------------------------------
+                    // 코드 조회 함수 선언 - 팝업창 OPEN
+                    // --------------------------------------------------------------
+                    args.popupObjs.popup.showModal()
+                    createGrid(filteredCodeList);
+                    // --------------------------------------------------------------
+                    // 코드 조회 함수 선언 - 팝업창에서 사용할 이벤트 설정
+                    // --------------------------------------------------------------
+                    // Close Button Click Event
+                    if(args.popupObjs.btnClose){
+                        args.popupObjs.btnClose.addEventListener('click', popupEvents.onBtnCloseClick)
+                    }
+
+                    // Cancel Button Click Event
+                    if(args.popupObjs.btnCancel){
+                        args.popupObjs.btnCancel.addEventListener('click', popupEvents.onBtnCancelClick)
+                    }
+
+                    // Ok Button Click Event
+                    if(args.popupObjs.btnOk){
+                        args.popupObjs.btnOk.addEventListener('click', popupEvents.onBtnOkClick)
+                    }
+                }
+
+
+                // //////////////////////////////////////////////////////////////
+                //
+                // [  코드, 이름, 조회버튼 초기화 시작 ]
+                //
+                // 1. 코드 목록을 가져와 초기값으로 저장한다.
+                // 2. 코드, 이름, 조회버튼의 이벤트를 정의한다.
+                //
+                // //////////////////////////////////////////////////////////////
+
+                codeList = await getCodeList()
+
+                // ==============================================================
+                // edCode 이벤트 정의
+                // ==============================================================
+                args.inputObjs.edCode.addEventListener('focus', function(event) {
+                    event.target.select(); // 포커스 시 텍스트 선택
+                })
+
+                args.inputObjs.edCode.addEventListener("keyup", async (event)=>{
+                    args.inputObjs.edName.value = ''
+                    args.inputObjs.edCodeName.value = ''
+
+                    if(event.key != 'Enter' && event.target.value.length < 4){
+                        return
+                    }
+                    
+                    const param = {
+                        code    : args.inputObjs.edCode.value, 
+                        name    : args.inputObjs.edCode.edName, 
+                        codeName: args.inputObjs.edCode.edCodeName,
+                        codeList  : JSON.parse(JSON.stringify(codeList)), 
+                    } 
+                    const filteredCodeList = await findCode(param)
+                    if(filteredCodeList.length == 0){
+                        args.inputObjs.edCode.value = ''
+                        args.inputObjs.edName.value = ''
+                        args.inputObjs.edCodeName.value = ''
+                    } else if(filteredCodeList.length == 1){
+                        const result = {
+                            btn : "",
+                            data : {
+                                code    : filteredCodeList[0].code,
+                                name    : filteredCodeList[0].name,
+                                codeName: filteredCodeList[0].codeName,
+                            }
+                        }
+                        popupEvents.onSelected(result)
+                        return result
+                    }
+                    showModal(filteredCodeList)
+                })
+
+                // ==============================================================
+                // edName 이벤트 정의
+                // ==============================================================
+                args.inputObjs.edName.addEventListener('focus', function(event) {
+                    event.target.select(); // 포커스 시 텍스트 선택
+                })
+
+                args.inputObjs.edName.addEventListener("keyup", async (event)=>{
+                    args.inputObjs.edCode.value = ''
+                    args.inputObjs.edCodeName.value = ''
+
+                    if(event.key != 'Enter'){
+                        return
+                    }
+                    const param = {
+                        edCode    : args.inputObjs.edCode.value, 
+                        edName    : args.inputObjs.edCode.edName, 
+                        edCodeName: args.inputObjs.edCode.edCodeName,
+                        codeList  : JSON.parse(JSON.stringify(codeList)), 
+                    } 
+                    const filteredCodeList = await findCode(param)
+                    if(filteredCodeList.length == 0){
+                        args.inputObjs.edCode.value = ''
+                        args.inputObjs.edName.value = ''
+                        args.inputObjs.edCodeName.value = ''
+                    } else if(filteredCodeList.length == 1){
+                        const result = {
+                            btn : "",
+                            data : {
+                                code    : filteredCodeList[0].code,
+                                name    : filteredCodeList[0].name,
+                                codeName: filteredCodeList[0].codeName,
+                            }
+                        }
+                        popupEvents.onSelected(result)
+                        return result
+                    }
+                    showModal(filteredCodeList)
+                })
+
+                // ==============================================================
+                // edCodeName 이벤트 정의
+                // ==============================================================
+                args.inputObjs.edCodeName.addEventListener('focus', function(event) {
+                    event.target.select(); // 포커스 시 텍스트 선택
+                })
+
+                args.inputObjs.edCodeName.addEventListener("keyup", async (event)=>{
+                    args.inputObjs.edCode.value = ''
+                    args.inputObjs.edName.value = ''
+
+                    if(event.key != 'Enter'){
+                        return
+                    }
+                    
+                    const param = {
+                        code    : args.inputObjs.edCode.value, 
+                        name    : args.inputObjs.edCode.edName, 
+                        codeName: args.inputObjs.edCode.edCodeName,
+                        codeList: JSON.parse(JSON.stringify(codeList)), 
+                    } 
+                    const filteredCodeList = await findCode(param)
+                    
+                    if(filteredCodeList.length == 0){
+                        args.inputObjs.edCode.value = ''
+                        args.inputObjs.edName.value = ''
+                        args.inputObjs.edCodeName.value = ''
+                    } else if(filteredCodeList.length == 1){
+                        const result = {
+                            btn : "",
+                            data : {
+                                code    : filteredCodeList[0].code,
+                                name    : filteredCodeList[0].name,
+                                codeName: filteredCodeList[0].codeName,
+                            }
+                        }
+                        popupEvents.onSelected(result)
+                        return result
+                    }
+                    showModal(filteredCodeList)
+                })
+
+                // ==============================================================
+                // btnSech
+                // ==============================================================
+                args.inputObjs.btnSrch.addEventListener("click", async ()=>{
+                    args.inputObjs.edCode.value = ''
+                    args.inputObjs.edName.value = ''
+                    args.inputObjs.edCodeName.value = ''
+                    const param = {
+                        code    : args.inputObjs.edCode.value, 
+                        name    : args.inputObjs.edCode.edName, 
+                        codeName: args.inputObjs.edCode.edCodeName,
+                        codeList: JSON.parse(JSON.stringify(codeList)), 
+                    } 
+                    const filteredCodeList = await findCode(param)
+                    
+                    if(filteredCodeList.length == 0){
+                        args.inputObjs.edCode.value = ''
+                        args.inputObjs.edName.value = ''
+                        args.inputObjs.edCodeName.value = ''
+                    } else if(filteredCodeList.length == 1){
+                        const result = {
+                            btn : "",
+                            data : {
+                                code    : filteredCodeList[0].code,
+                                name    : filteredCodeList[0].name,
+                                codeName: filteredCodeList[0].codeName,
+                            }
+                        }
+                        popupEvents.onSelected(result)
+                        return result
+                    }
+                    showModal(filteredCodeList)
+                })
             }
-        )
+        }
+
+        app.config.globalProperties.$helpComponent = helpComponent
         
-        // --------------------------------------------------------------
-        // 코드 조회 함수 선언 - 조건에 맞는 코드가 1개이면 출력 후 끝
-        // --------------------------------------------------------------
-        if(filteredCodeList.length == 1){
-            result = {
-                btn : "ok",
-                data : {
-                    code    : filteredCodeList[0].code,
-                    name    : filteredCodeList[0].name,
-                    codeName: filteredCodeList[0].codeName,
-                }
-            }
-            onSelected(result)
-            return result
-        }
-        
-        // --------------------------------------------------------------
-        // 코드 조회 함수 선언 - 조건에 맞는 코드가 없으면 모든 코드 목록
-        // --------------------------------------------------------------
-        if(filteredCodeList.length == 0){
-            edCode.value = ''
-            edName.value = ''
-            edCodeName.value = ''
-            filteredCodeList = JSON.parse(JSON.stringify(codeList))
-        }
-
-        // --------------------------------------------------------------
-        // 코드 조회 함수 선언 - 조건에 맞는 코드가 여러개이면 그리드에 목록 출력
-        // --------------------------------------------------------------
-
-        filteredCodeList.forEach((item, index) => {
-            item.idx = index; // 원본 배열의 각 항목에 idx 속성 추가
-        });
-        
-        const columnDefs=[
-            { field: 'idx'      , flex: 1},
-            { field: 'code'     , flex: 1},
-            { field: 'name'     , flex: 1},
-            { field: 'codeName' , flex: 2},
-        ]
-        grid.$el.className = ''
-        grid.$el.classList.add('ag-theme-quartz')
-        grid.api.setGridOption("rowSelection", 'single')
-        grid.api.setGridOption("columnDefs", columnDefs)
-        grid.api.setGridOption("rowData",  JSON.parse(JSON.stringify(filteredCodeList)))
-        
-
-        // --------------------------------------------------------------
-        // 코드 조회 함수 선언 - 팝업창에서 사용할 각종 이벤트 함수 선언
-        // --------------------------------------------------------------
-        const removeEvent = ()=>{
-            btnClose.removeEventListener('click', onBtnCloseClick)
-            btnCancel.removeEventListener('click', onBtnCancelClick)
-            btnOk.removeEventListener('click', onBtnOkClick)
-            grid.api.removeEventListener('rowDoubleClicked' , rowDblClick)
-        }
-
-        // grid double click event
-        const rowDblClick = (event) => {
-            result = {
-                btn : "ok",
-                data : event.data
-            }
-            onSelected(result)
-            removeEvent()
-        }
-        const onBtnCloseClick = ()=>{
-            result = {
-                btn  : "close",
-                data : {
-                    code : '',
-                    name : '',
-                    codeName : '',
-                }
-            }
-            onSelected(result)
-            removeEvent()
-        }
-
-        const onBtnCancelClick = ()=>{
-            result = {
-                btn  : "cancel",
-                data : {
-                    code : '',
-                    name : '',
-                    codeName : '',
-                }
-            }
-            onSelected(result)
-            removeEvent()
-        }
-        
-        const onBtnOkClick = ()=>{
-            result = {
-                btn  : "ok",
-                data : {
-                    code : "",
-                    name : "",
-                    codeName : "",
-                }
-            }
-            const selectedDatas = grid.api.getSelectedRows()
-            if(selectedDatas.length > 0){
-                result.data = selectedDatas[0]
-            }
-            onSelected(result)
-            removeEvent()
-        }
-
-        // --------------------------------------------------------------
-        // 코드 조회 함수 선언 - 팝업창에서 사용할 이벤트 설정
-        // --------------------------------------------------------------
-        grid.api.addEventListener('rowDoubleClicked', rowDblClick)
-        // Close Button Click Event
-        if(btnClose){
-            btnClose.addEventListener('click', onBtnCloseClick)
-        }
-
-        // Cancel Button Click Event
-        if(btnCancel){
-            btnCancel.addEventListener('click', onBtnCancelClick)
-        }
-
-        // Ok Button Click Event
-        if(btnOk){
-            btnOk.addEventListener('click', onBtnOkClick)
-        }
-
-        // --------------------------------------------------------------
-        // 코드 조회 함수 선언 - 팝업창 OPEN
-        // --------------------------------------------------------------
-        popupTitle.textContent  = codeTypeName[codeType]
-        popup.showModal()
-
     }
 
-    // --------------------------------------------------------------
-    // 코드목록 준비
-    // --------------------------------------------------------------
-    if(!codeList){
-        const formData = new FormData()
-        const svo = {
-            searchDvo : {
-                codeType : codeType
-            }
-        }
-        const svoStr = JSON.stringify(svo)
-        formData.append('svo', new Blob([svoStr], {type : 'application/json'}), 'svo')
-        const URL = 'http://localhost:3000/getCodeList'
-        try{
-            const response = await axios.post(URL, formData)
-            codeList = response.data.resData
-        } catch(error){
-            console.log(error)
-        }
-    }
-    // --------------------------------------------------------------
-    // 메인창의 이벤트 정의
-    // --------------------------------------------------------------
-    // edCode
-    edCode.addEventListener('focus', function(event) {
-        event.target.select(); // 포커스 시 텍스트 선택
-    })
-
-    edCode.addEventListener("keyup", (event)=>{
-        edName.value = ''
-        edCodeName.value = ''
-
-        if(event.key != 'Enter' && event.target.value.length < 4){
-            return
-        }
-        
-        const param = {
-            codeType  : codeType,
-            edCode    : edCode, 
-            edName    : edName, 
-            edCodeName: edCodeName,
-            codeList  : JSON.parse(JSON.stringify(codeList)), 
-        } 
-        findCode(param)
-    })
-
-    // edName
-    edName.addEventListener('focus', function(event) {
-        event.target.select(); // 포커스 시 텍스트 선택
-    })
-
-    edName.addEventListener("keyup", (event)=>{
-        edCode.value = ''
-        edCodeName.value = ''
-
-        if(event.key != 'Enter'){
-            return
-        }
-        const param = {
-            codeType  : codeType,
-            edCode    : edCode, 
-            edName    : edName, 
-            edCodeName: edCodeName,
-            codeList  : JSON.parse(JSON.stringify(codeList)), 
-        } 
-        findCode(param)
-    })
-
-    // edCodeName
-    edCodeName.addEventListener('focus', function(event) {
-        event.target.select(); // 포커스 시 텍스트 선택
-    })
-
-    edCodeName.addEventListener("keyup", (event)=>{
-        edCode.value = ''
-        edName.value = ''
-
-        if(event.key != 'Enter'){
-            return
-        }
-        
-        const param = {
-            codeType  : codeType,
-            edCode    : edCode, 
-            edName    : edName, 
-            edCodeName: edCodeName,
-            codeList  : JSON.parse(JSON.stringify(codeList)), 
-        } 
-        
-        findCode(param)
-    })
-
-    // btnSech
-    btnSrch.addEventListener("click", ()=>{
-        edCode.value = ''
-        edName.value = ''
-        edCodeName.value = ''
-        const param = {
-            codeType  : codeType,
-            edCode    : edCode, 
-            edName    : edName, 
-            edCodeName: edCodeName,
-            codeList  : JSON.parse(JSON.stringify(codeList)), 
-        } 
-        findCode(param)
-    })
 }
 
 /* ========================================================================== *
@@ -334,12 +423,12 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import store from './store'
-import helpComponentInit from '@/utils/HelpComponent.js'; // 추가
+import helpComponent from '@/utils/HelpComponent.js'; // 추가
 
 createApp(App)
     .use(store)
     .use(router)
-    .use(helpComponentInit) // 추가
+    .use(helpComponent) // 추가
     .mount('#app')
 
 // ---------------------------------- view ----------------------------------
@@ -376,10 +465,8 @@ createApp(App)
 
 import { AgGridVue } from "ag-grid-vue3"; // Ag-Grid API
 
-
 export default {
 
-  
   name: 'HelpComponentDemoView',
 
   components: {
@@ -392,9 +479,9 @@ export default {
   },
 
   mounted : function() {
-    const param = {
-      codeType  : 'DEPT', 
+    param = {
       codeList  : null,
+      postUrl : 'http://localhost:3000/getCodeList/DEPT', // 코드 조회를 위한 URL
       inputObjs : {
         edCode    : this.$refs.edDeptCodeRef, 
         edName    : this.$refs.edDeptNameRef, 
@@ -416,7 +503,7 @@ export default {
       },
 
     }
-    this.$helpComponentInit(param)
+    this.$helpComponent.initial(param)
   },
 }
 </script>

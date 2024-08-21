@@ -13,5 +13,6 @@ const getCodeList = async function(reqData){
 }
 
 module.exports = [
-    { url : "/", method : getCodeList, }
+    { url : "/", method : getCodeList, },
+    { url : "/:param", method : getCodeList, }
 ]

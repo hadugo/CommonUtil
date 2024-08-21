@@ -35,6 +35,7 @@ const getCommonRouter = function(controllerPath){
 
         router.route(controller.url)
             .post(async (req, res, next) => {
+                debugger;
                 console.log('baseUrl : ', req.baseUrl);
                 const result = {
                     sucess : false,
@@ -118,11 +119,13 @@ const getCommonRouter = function(controllerPath){
                 // Call Conroller
                 // ======================================================
                 try{
-                    const dvo = req.params && Object.keys(req.params).length > 0 ? req.params : req.query;
+                    const param = req.params && Object.keys(req.params).length > 0 ? req.params : req.query;
+                    const codeType = param.param ? param.param : param.codeType
+                    const dvo = {codeType : codeType}
                     const svo = { searchDvo : dvo }
                     result.reqData = { svo : svo }
                     const data = await controller.method(result.reqData);
-                    result.resData = data.resData
+                    result.resData = data.data
                     result.error   = data.error;
                     result.sucess  = data.sucess;
                     res.status(200).json(result);
