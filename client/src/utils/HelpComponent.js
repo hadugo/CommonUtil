@@ -16,6 +16,7 @@ export default {
                         edName,      // 이름 입력 테그 객체
                         edCodeName,  // "[ 코드 ] 이름" 테그 객체
                         btnSrch      // 조회버튼 객체
+                        codeLength,  // 코드 길이
                     }, 
                     popupObjs : {
                         popup,       // dialog테그 객체
@@ -38,7 +39,12 @@ export default {
                 
                 let getCodeList = async function(){
                     let codeList = null
-                    if(args.codeList){
+                    if(args.codeList && args.codeList.length > 0){
+                        args.codeList.forEach((item) => {
+                            if(!item.codeName){
+                                item.codeName = `[ ${item.code} ] ${item.name} `
+                            }
+                        });
                         return args.codeList
                     }
                     const formData = new FormData()
@@ -54,6 +60,15 @@ export default {
                         console.log(error)
                         return null // 오류 발
                     }
+                    
+
+                    codeList.forEach((item, index) => {
+                        item.idx = index; // 원본 배열의 각 항목에 idx 속성 추가
+                        if(!item.codeName){
+                            item.codeName = `[ ${item.code} ] ${item.name} `
+                        }
+                    });
+
                     return codeList
                 }
 
@@ -161,9 +176,9 @@ export default {
                 const findCode = async (param /* {code, name, codeName, codeList} */ )=>{
                     if(!codeList) return []
                     if(codeList.length == 0) return []
-                    const paramCode     = param.code      ? param.code.toUpperCase()      : ''
-                    const paramName     = param.name      ? param.code.toUpperCase()      : ''
-                    const paramCodeName = param.codeName  ? param.code.toUpperCase()  : ''
+                    const paramCode     = param.code      ? param.code.toUpperCase()  : ''
+                    const paramName     = param.name      ? param.name.toUpperCase()  : ''
+                    const paramCodeName = param.codeName  ? param.codeName.toUpperCase()  : ''
                     // --------------------------------------------------------------
                     // 코드 조회 함수 선언 - 코드목록에서 조건에 맞는 코드를 검사하여 목록 재구성
                     // --------------------------------------------------------------
@@ -200,9 +215,6 @@ export default {
 
                     filteredCodeList.forEach((item, index) => {
                         item.idx = index; // 원본 배열의 각 항목에 idx 속성 추가
-                        if(!item.codeName){
-                            item.codeName = `[ ${item.code} ] ${item.name} `
-                        }
                     });
 
                     return filteredCodeList;
@@ -262,7 +274,7 @@ export default {
                     args.inputObjs.edName.value = ''
                     args.inputObjs.edCodeName.value = ''
 
-                    if(event.key != 'Enter' && event.target.value.length < 4){
+                    if(event.key != 'Enter' && event.target.value.length < args.inputOnjs.codeLength){
                         return
                     }
                     
@@ -307,9 +319,9 @@ export default {
                         return
                     }
                     const param = {
-                        edCode    : args.inputObjs.edCode.value, 
-                        edName    : args.inputObjs.edCode.edName, 
-                        edCodeName: args.inputObjs.edCode.edCodeName,
+                        code    : args.inputObjs.edCode.value, 
+                        name    : args.inputObjs.edName.value, 
+                        codeName: args.inputObjs.edCodeName.value,
                         codeList  : JSON.parse(JSON.stringify(codeList)), 
                     } 
                     const filteredCodeList = await findCode(param)
@@ -346,11 +358,10 @@ export default {
                     if(event.key != 'Enter'){
                         return
                     }
-                    
                     const param = {
                         code    : args.inputObjs.edCode.value, 
-                        name    : args.inputObjs.edCode.edName, 
-                        codeName: args.inputObjs.edCode.edCodeName,
+                        name    : args.inputObjs.edName.value, 
+                        codeName: args.inputObjs.edCodeName.value, 
                         codeList: JSON.parse(JSON.stringify(codeList)), 
                     } 
                     const filteredCodeList = await findCode(param)
@@ -383,8 +394,8 @@ export default {
                     args.inputObjs.edCodeName.value = ''
                     const param = {
                         code    : args.inputObjs.edCode.value, 
-                        name    : args.inputObjs.edCode.edName, 
-                        codeName: args.inputObjs.edCode.edCodeName,
+                        name    : args.inputObjs.edName.value, 
+                        codeName: args.inputObjs.edCodeName.value,
                         codeList: JSON.parse(JSON.stringify(codeList)), 
                     } 
                     const filteredCodeList = await findCode(param)
@@ -483,23 +494,30 @@ export default {
 
   mounted : function() {
     param = {
-      codeList  : null,
-      postUrl : 'http://localhost:3000/getCodeList/DEPT', // 코드 조회를 위한 URL
+      codeList  : [                                      // 코드 목록
+        { code : "D011", name : "관리부" },
+        { code : "D012", name : "영업부" },
+        { code : "D013", name : "사업부" },
+        { code : "D021", name : "개발부" },
+        { code : "D022", name : "생산1부" },
+        { code : "D023", name : "생산2부" },
+      ],
+      postUrl : 'http://localhost:3000/getCodeList/DEPT', // codeList가 없는 경우 코드 조회를 위한 URL
       inputObjs : {
-        edCode    : this.$refs.edDeptCodeRef, 
-        edName    : this.$refs.edDeptNameRef, 
-        edCodeName: this.$refs.edDeptCodeNameRef,
-        btnSrch   : this.$refs.btnDeptSrchRef, 
+        edCode    : this.$refs.edDeptCodeRef,             // 코드입력 테그 객체
+        edName    : this.$refs.edDeptNameRef,             // 이름입력 테그 객체
+        edCodeName: this.$refs.edDeptCodeNameRef,         // "[ 코드 ] 이름"입력 테그 객체
+        btnSrch   : this.$refs.btnDeptSrchRef,            // 조회버튼 객체
+        codeLength: 4,                                    // 코드 길이
       },
       popupObjs   : {
-        popup     : this.$refs.codeHelpDialog,
-        popupTitle: this.$refs.titleCodeHelpDialog,
-        grid      : this.$refs.grdCodeHelpDialog,
-        btnOk     : this.$refs.btnOk,
-        btnCancel : this.$refs.btnCancel,
-        btnClose  : this.$refs.btnClose,
+        popup     : this.$refs.codeHelpDialog,            // dialog 테그 객체
+        grid      : this.$refs.grdCodeHelpDialog,         // dialog의 그리드 객체
+        btnOk     : this.$refs.btnOk,                     // dialog의 ok버튼 객체
+        btnCancel : this.$refs.btnCancel,                 // dialog의 [cancel]버튼 객체
+        btnClose  : this.$refs.btnClose,                  // dialog의 죄측 상단 [x]버튼 객체
       },
-      callback  : (param)=>{
+      callback  : (param)=>{                              // 코드 선택 후 실행할 callback함수
         const {btn, data} = param
         const {code, name, codeName} = data
         alert(`${btn}\n${code} : ${name}\n${codeName}`)

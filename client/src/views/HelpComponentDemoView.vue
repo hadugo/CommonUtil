@@ -16,27 +16,38 @@
       <button ref="btnTitlSrchRef">...</button>
     </div>
     <div style="text-align: left">
-      <p>[ 기능설명 ]</p>
+      <p> </p>
+      <p><b>[ 기능설명 ]</b></p>
       <ul><b>부서</b>
         <li><b>[코드] , [이름], [조회]</b>버튼으로 구성</li>
-        <li><b>[코드]</b>입력란에서 [enter]키를 입력하면 코드 목록 조회</li>
-        <li><b>[코드]</b>입력란에서 코드의 일부를 입력하고 [enter]키를 입력하면 입력한 글자가 포함된 코드 목록 조회</li>
-        <li><b>[이름]</b>입력란에서 [enter]키를 입력하면 코드 목록 조회</li>
-        <li><b>[코드]</b>입력란에서 코드의 일부를 입력하고 [enter]키를 입력하면 입력한 글자가 포함된 코드 목록 조회</li>
+        <li><b>[코드]</b>입력란에서 [enter]키를 입력하면 모든 코드목록이 조회됩니다..</li>
+        <li><b>[코드]</b>입력란에서 "D01"을 입력 후 [enter]키를 입력하면 코드에 "D01"이 포함된 코드 목록이 조회됩니다.</li>
+        <li><b>[코드]</b>입력란에서 "D011"을 입력하면 "D011"에 해당하는 코드와 이름이 선택됩니다.</li>
+        <li><b>[이름]</b>입력란에서 [enter]키를 입력하면 모든 코드 목록이 조회됩니다.</li>
+        <li><b>[이름]</b>입력란에서 "생산"을 입력 후 [enter]키를 입력하면 이름에 "생산"이 포함된 코드 목록이 조회됩니다.</li>
+        <li><b>[이름]</b>입력란에서 "영업"을 입력 후 [enter]키를 입력하면 "영업부"가 선택됩니다.</li>
+        <li><b>[조회]</b>버튼을 클릭하면 모든 코드목록이 조회됩니다.</li>
       </ul>
       <ul><b>직급</b>
         <li><b>"[ D0010 ] 사원"</b>과 같은 표현식의 입력란과 <b>조회버튼</b>으로 구성</li>
-        <li><b>[코드]</b>입력란에서 [enter]키를 입력하면 코드 목록 조회</li>
-        <li><b>[코드]</b>입력란에서 코드의 일부를 입력하고 [enter]키를 입력하면 입력한 글자가 포함된 코드 목록 조회</li>
-        <li><b>[이름]</b>입력란에서 [enter]키를 입력하면 코드 목록 조회</li>
-        <li><b>[코드]</b>입력란에서 코드의 일부를 입력하고 [enter]키를 입력하면 입력한 글자가 포함된 코드 목록 조회</li>
+        <li>[enter]키를 입력하면 모든 코드목록이 조회됩니다..</li>
+        <li><b>"T01"</b>을 입력하면 코드에 "T01"이 포함된 코드 목록이 조회됩니다.</li>
+        <li><b>"T011"</b>을 입력 후 [enter]키를 입력하면 "T011"에 해당하는 코드와 이름이 선택됩니다.</li>
+        <li><b>"장"</b>을 입력 후 [enter]키를 입력하면 코드명에 "장"이 포함된 코드와 이름이 선택됩니다.</li>
+        <li><b>[조회]</b>버튼을 클릭하면 모든 코드목록이 조회됩니다.</li>
+      </ul>
+      <ul><b>팝업창</b>
+        <li>팝업창의 우측 상단의 [x]버튼을 클릭하면 창이 닫히고 callback함수가 실행됩니다.</li>
+        <li>팝업창의 [cancel]버튼을 클릭하면 창이 닫히고 callback함수가 실행됩니다.</li>
+        <li>팝업창의 그리드에서 코드를 선택하여 더블클릭하면 창이 닫히고 callback함수가 실행됩니다.</li>
+        <li>팝업창의 그리드에서 코드를 선택한 후 [OK]버튼을 클릭하면 창이 닫히고 callback함수가 실행됩니다.</li>
       </ul>
     </div>
     <dialog class="modal" ref="codeHelpDialog">
       <div class="systemMenu">
         <span ref="btnClose" class="btnClose">x</span>
       </div>
-      <h4 ref="titleCodeHelpDialog" class="title"></h4>
+      <h4 class="title">공통 코드 목록</h4>
       <ag-grid-vue
         ref="grdCodeHelpDialog"
         style="height: 500px"
@@ -79,8 +90,10 @@ export default {
       codeList  : [
         { code : "D011", name : "관리부" },
         { code : "D012", name : "영업부" },
+        { code : "D013", name : "사업부" },
         { code : "D021", name : "개발부" },
-        { code : "D022", name : "생산부" },
+        { code : "D022", name : "생산1부" },
+        { code : "D023", name : "생산2부" },
       ],
       postUrl : 'http://localhost:3000/getCodeList/DEPT', // codeList가 없는 경우 코드 조회를 위한 URL
       inputObjs : {
@@ -88,10 +101,10 @@ export default {
         edName    : this.$refs.edDeptNameRef, 
         edCodeName: this.$refs.edDeptCodeNameRef,
         btnSrch   : this.$refs.btnDeptSrchRef, 
+        codeLength: 4,
       },
       popupObjs   : {
         popup     : this.$refs.codeHelpDialog,
-        popupTitle: this.$refs.titleCodeHelpDialog,
         grid      : this.$refs.grdCodeHelpDialog,
         btnOk     : this.$refs.btnOk,
         btnCancel : this.$refs.btnCancel,
@@ -120,10 +133,10 @@ export default {
         edName    : this.$refs.edTitlNameRef, 
         edCodeName: this.$refs.edTitlCodeNameRef,
         btnSrch   : this.$refs.btnTitlSrchRef, 
+        codeLength: 4,
       },
       popupObjs   : {
         popup     : this.$refs.codeHelpDialog,
-        popupTitle: this.$refs.titleCodeHelpDialog,
         grid      : this.$refs.grdCodeHelpDialog,
         btnOk     : this.$refs.btnOk,
         btnCancel : this.$refs.btnCancel,
@@ -153,7 +166,7 @@ export default {
   .modal {
       background: antiquewhite;
       border-radius: 10px;
-      width: 400px;
+      width: 500px;
       padding: 0px 10px 10px 10px;
       margin: 100px auto;
   }
