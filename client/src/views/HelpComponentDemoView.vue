@@ -48,10 +48,7 @@
         <span ref="btnClose" class="btnClose">x</span>
       </div>
       <h4 class="title">공통 코드 목록</h4>
-      <ag-grid-vue
-        ref="grdCodeHelpDialog"
-        style="height: 500px"
-      />
+      <div ref="cntrCodeHelpDialog"/>
       <div class="buttonGroup">
         <button ref="btnOk">확인</button>
         <button ref="btnCancel">취소</button>
@@ -66,15 +63,14 @@
 // import {TabulatorFull as Tabulator} from 'tabulator-tables';
 // npm install ag-grid-vue3 ag-grid-community
 // import { AgGridVue } from "ag-grid-vue3"; // Vue Data Grid Component
-import { AgGridVue } from "ag-grid-vue3"; // Ag-Grid API
+// import { AgGridVue } from "ag-grid-vue3"; // Ag-Grid API
 
 export default {
 
-  
   name: 'HelpComponentDemoView',
 
   components: {
-    AgGridVue, // Add Vue Data Grid component
+//    AgGridVue, // Add Vue Data Grid component
   },
 
   data : function() {
@@ -105,7 +101,7 @@ export default {
       },
       popupObjs   : {
         popup     : this.$refs.codeHelpDialog,
-        grid      : this.$refs.grdCodeHelpDialog,
+        gridContainer:this.$refs.cntrCodeHelpDialog,
         btnOk     : this.$refs.btnOk,
         btnCancel : this.$refs.btnCancel,
         btnClose  : this.$refs.btnClose,
@@ -137,7 +133,7 @@ export default {
       },
       popupObjs   : {
         popup     : this.$refs.codeHelpDialog,
-        grid      : this.$refs.grdCodeHelpDialog,
+        gridContainer:this.$refs.cntrCodeHelpDialog,
         btnOk     : this.$refs.btnOk,
         btnCancel : this.$refs.btnCancel,
         btnClose  : this.$refs.btnClose,

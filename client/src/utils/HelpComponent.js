@@ -1,5 +1,6 @@
 
 import axios from 'axios'
+import {createGrid} from 'ag-grid-community'
 export default {
     install(app){
 
@@ -20,7 +21,7 @@ export default {
                     }, 
                     popupObjs : {
                         popup,       // dialog테그 객체
-                        grid,        // 그리드 객체
+                        gridContainer, // 그리드 컨테이너
                         btnClose,    // 팝업창의 우측 상단 [x] 버튼 객체
                         btnOk,       // 팝업창의 [선택]버튼 객체
                         btnCancel    // 팝업창의 [취소]버튼 객채
@@ -36,6 +37,7 @@ export default {
                 // //////////////////////////////////////////////////////////////
 
                 let codeList = null
+                let grid = null
                 
                 let getCodeList = async function(){
                     let codeList = null
@@ -77,6 +79,14 @@ export default {
                 // ..............................................................
                 const popupEvents = {
                     onSelected : (param /* {btn, data={code, name, codeName}} */) => {
+                        if(grid){
+                            grid.api.destroy()
+                            grid = null
+                            while (args.popupObjs.gridContainer.firstChild) {
+                                args.popupObjs.gridContainer.removeChild(args.popupObjs.gridContainer.firstChild);
+                            }
+                        }
+
                         if(args.popupObjs.popup.open){
                             args.popupObjs.popup.close()
                         }
@@ -137,7 +147,7 @@ export default {
                                 codeName : "",
                             },
                         }
-                        const selectedDatas = args.popupObjs.grid.api.getSelectedRows()
+                        const selectedDatas = grid.api.getSelectedRows()
                         if(selectedDatas.length > 0){
                             result.data = selectedDatas[0]
                         }
@@ -148,7 +158,7 @@ export default {
                         args.popupObjs.btnClose.removeEventListener('click', popupEvents.onBtnCloseClick)
                         args.popupObjs.btnCancel.removeEventListener('click', popupEvents.onBtnCancelClick)
                         args.popupObjs.btnOk.removeEventListener('click', popupEvents.onBtnOkClick)
-                        args.popupObjs.grid.api.removeEventListener('rowDoubleClicked' , popupEvents.rowDblClick)
+ //                       grid.removeEventListener('rowDoubleClicked' , popupEvents.rowDblClick)
                     },
 
                 }
@@ -156,19 +166,31 @@ export default {
                 // ..............................................................
                 // 팝업창에서 사용할 그리드 생성 함수 선언
                 // ..............................................................
-                const createGrid = function(filteredCodeList){
-                    const columnDefs=[
-                        { field: 'idx'      , flex: 1},
-                        { field: 'code'     , flex: 1},
-                        { field: 'name'     , flex: 1},
-                        { field: 'codeName' , flex: 2},
-                    ]
-                    args.popupObjs.grid.$el.className = ''
-                    args.popupObjs.grid.$el.classList.add('ag-theme-quartz')
-                    args.popupObjs.grid.api.setGridOption("rowSelection", 'single')
-                    args.popupObjs.grid.api.setGridOption("columnDefs", columnDefs)
-                    args.popupObjs.grid.api.setGridOption("rowData",  JSON.parse(JSON.stringify(filteredCodeList)))
-                    args.popupObjs.grid.api.addEventListener('rowDoubleClicked', popupEvents.rowDblClick)
+                const createAgGridGrid = async function(filteredCodeList){
+                    const grid = await new Promise((resolve)=>{
+                        const columnDefs=[
+                            { field: 'idx'      , flex: 1},
+                            { field: 'code'     , flex: 1},
+                            { field: 'name'     , flex: 1},
+                            { field: 'codeName' , flex: 2},
+                        ]
+                        const gridOptions = {
+                            columnDefs: columnDefs,
+                            rowData: [],
+                            onGridReady: (params) => {
+                                params.api.sizeColumnsToFit();
+                                params.api.setGridOption("rowSelection", 'single')
+                                params.api.setGridOption("columnDefs", columnDefs)
+                                params.api.setGridOption("rowData",  JSON.parse(JSON.stringify(filteredCodeList)))
+                                params.api.addEventListener('rowDoubleClicked', popupEvents.rowDblClick)
+                                resolve(params)
+                            }
+                        };
+                        args.popupObjs.gridContainer.classList.add('ag-theme-quartz')
+                        args.popupObjs.gridContainer.style.height = "500px"
+                        createGrid(args.popupObjs.gridContainer, gridOptions);
+                    })
+                    return grid
                 }
                 // ..............................................................
                 // 팝업창에 사용할 코드 목록 필터링 함수 선언
@@ -224,14 +246,13 @@ export default {
                 // ..............................................................
                 // 팝업창을 열기 위한 함수 선언
                 // ..............................................................
-                const showModal = function(filteredCodeList){
+                const showModal = async function(filteredCodeList){
                     if(!filteredCodeList) return
                     if(filteredCodeList.length == 0) return
                     // --------------------------------------------------------------
                     // 코드 조회 함수 선언 - 팝업창 OPEN
                     // --------------------------------------------------------------
-                    args.popupObjs.popup.showModal()
-                    createGrid(filteredCodeList);
+                    grid = await createAgGridGrid(filteredCodeList);
                     // --------------------------------------------------------------
                     // 코드 조회 함수 선언 - 팝업창에서 사용할 이벤트 설정
                     // --------------------------------------------------------------
@@ -249,6 +270,7 @@ export default {
                     if(args.popupObjs.btnOk){
                         args.popupObjs.btnOk.addEventListener('click', popupEvents.onBtnOkClick)
                     }
+                    args.popupObjs.popup.showModal()
                 }
 
 
@@ -273,8 +295,7 @@ export default {
                 args.inputObjs.edCode.addEventListener("keyup", async (event)=>{
                     args.inputObjs.edName.value = ''
                     args.inputObjs.edCodeName.value = ''
-
-                    if(event.key != 'Enter' && event.target.value.length < args.inputOnjs.codeLength){
+                    if(event.key != 'Enter' && event.target.value.length < args.inputObjs.codeLength){
                         return
                     }
                     
@@ -432,7 +453,9 @@ export default {
 /* ========================================================================== *
 
 
-// -------------------------------- main.js ---------------------------------
+// --------------------------------------------------------------------------
+//  main.js
+// --------------------------------------------------------------------------
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
@@ -445,7 +468,10 @@ createApp(App)
     .use(helpComponent) // 추가
     .mount('#app')
 
-// ---------------------------------- view ----------------------------------
+
+// --------------------------------------------------------------------------
+//  view Sample
+// --------------------------------------------------------------------------
 <template>
   <div>
     
@@ -460,11 +486,8 @@ createApp(App)
       <div class="systemMenu">
         <span ref="btnClose" class="btnClose">x</span>
       </div>
-      <h4 ref="titleCodeHelpDialog" class="title"></h4>
-      <ag-grid-vue
-        ref="grdCodeHelpDialog"
-        style="height: 500px"
-      />
+      <h4 class="title">공통 코드 목록</h4>
+      <div ref="cntrCodeHelpDialog"/>
       <div class="buttonGroup">
         <button ref="btnOk">확인</button>
         <button ref="btnCancel">취소</button>
@@ -512,7 +535,7 @@ export default {
       },
       popupObjs   : {
         popup     : this.$refs.codeHelpDialog,            // dialog 테그 객체
-        grid      : this.$refs.grdCodeHelpDialog,         // dialog의 그리드 객체
+        gridContainer:this.$refs.cntrCodeHelpDialog,      // 그리드 컨테이너 객체
         btnOk     : this.$refs.btnOk,                     // dialog의 ok버튼 객체
         btnCancel : this.$refs.btnCancel,                 // dialog의 [cancel]버튼 객체
         btnClose  : this.$refs.btnClose,                  // dialog의 죄측 상단 [x]버튼 객체
