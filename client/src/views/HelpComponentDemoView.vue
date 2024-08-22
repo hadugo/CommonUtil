@@ -187,7 +187,3 @@ export default {
       padding: 20px 0px 10px 0px;
   }
 </style>
-<<<<<<< HEAD
-
-=======
->>>>>>> ac3063b (HelpComponent.js 수정)
