@@ -40,38 +40,33 @@ export default {
                 let grid = null
                 
                 let getCodeList = async function(){
-                    let codeList = null
                     if(args.codeList && args.codeList.length > 0){
-                        args.codeList.forEach((item) => {
+                        args.codeList.forEach((item, index) => {
+                            item.idx = index;
                             if(!item.codeName){
                                 item.codeName = `[ ${item.code} ] ${item.name} `
                             }
                         });
                         return args.codeList
                     }
-                    const formData = new FormData()
-                    const svo = {
-                        searchDvo : args.postParam,
-                    }
-                    const svoStr = JSON.stringify(svo)
-                    formData.append('svo', new Blob([svoStr], {type : 'application/json'}), 'svo')
+
+                    let result = null
                     try{
                         const response = await axios.get(args.postUrl)
-                        codeList = response.data.resData
+                        result = response.data.resData
                     } catch(error){
                         console.log(error)
                         return null // 오류 발
                     }
                     
-
-                    codeList.forEach((item, index) => {
-                        item.idx = index; // 원본 배열의 각 항목에 idx 속성 추가
+                    result.forEach((item, index) => {
+                        item.idx = index;
                         if(!item.codeName){
                             item.codeName = `[ ${item.code} ] ${item.name} `
                         }
                     });
 
-                    return codeList
+                    return result
                 }
 
                 // ..............................................................
@@ -86,7 +81,7 @@ export default {
                                 args.popupObjs.gridContainer.removeChild(args.popupObjs.gridContainer.firstChild);
                             }
                         }
-
+                        
                         if(args.popupObjs.popup.open){
                             args.popupObjs.popup.close()
                         }
@@ -164,35 +159,6 @@ export default {
                 }
 
                 // ..............................................................
-                // 팝업창에서 사용할 그리드 생성 함수 선언
-                // ..............................................................
-                const createAgGridGrid = async function(filteredCodeList){
-                    const grid = await new Promise((resolve)=>{
-                        const columnDefs=[
-                            { field: 'idx'      , flex: 1},
-                            { field: 'code'     , flex: 1},
-                            { field: 'name'     , flex: 1},
-                            { field: 'codeName' , flex: 2},
-                        ]
-                        const gridOptions = {
-                            columnDefs: columnDefs,
-                            rowData: [],
-                            onGridReady: (params) => {
-                                params.api.sizeColumnsToFit();
-                                params.api.setGridOption("rowSelection", 'single')
-                                params.api.setGridOption("columnDefs", columnDefs)
-                                params.api.setGridOption("rowData",  JSON.parse(JSON.stringify(filteredCodeList)))
-                                params.api.addEventListener('rowDoubleClicked', popupEvents.rowDblClick)
-                                resolve(params)
-                            }
-                        };
-                        args.popupObjs.gridContainer.classList.add('ag-theme-quartz')
-                        args.popupObjs.gridContainer.style.height = "500px"
-                        createGrid(args.popupObjs.gridContainer, gridOptions);
-                    })
-                    return grid
-                }
-                // ..............................................................
                 // 팝업창에 사용할 코드 목록 필터링 함수 선언
                 // ..............................................................
                 const findCode = async (param /* {code, name, codeName, codeList} */ )=>{
@@ -252,7 +218,27 @@ export default {
                     // --------------------------------------------------------------
                     // 코드 조회 함수 선언 - 팝업창 OPEN
                     // --------------------------------------------------------------
-                    grid = await createAgGridGrid(filteredCodeList);
+                    grid = await new Promise((resolve)=>{
+                        const columnDefs=[
+                            { field: 'idx'      , headerName: '번호', flex: 1},
+                            { field: 'code'     , headerName: '코드', flex: 1},
+                            { field: 'name'     , headerName: '이름', flex: 1},
+                            { field: 'codeName' , headerName: '비고', flex: 2},
+                        ]
+                        const gridOptions = {
+                            columnDefs      : columnDefs,
+                            rowData         : JSON.parse(JSON.stringify(filteredCodeList)),
+                            rowSelection    :'single',
+                            onGridReady: (params) => {
+                                params.api.sizeColumnsToFit();
+                                params.api.addEventListener('rowDoubleClicked', popupEvents.rowDblClick)
+                                resolve(params)
+                            }
+                        };
+                        args.popupObjs.gridContainer.classList.add('ag-theme-quartz')
+                        args.popupObjs.gridContainer.style.height = "500px"
+                        createGrid(args.popupObjs.gridContainer, gridOptions);
+                    })
                     // --------------------------------------------------------------
                     // 코드 조회 함수 선언 - 팝업창에서 사용할 이벤트 설정
                     // --------------------------------------------------------------
@@ -306,11 +292,7 @@ export default {
                         codeList  : JSON.parse(JSON.stringify(codeList)), 
                     } 
                     const filteredCodeList = await findCode(param)
-                    if(filteredCodeList.length == 0){
-                        args.inputObjs.edCode.value = ''
-                        args.inputObjs.edName.value = ''
-                        args.inputObjs.edCodeName.value = ''
-                    } else if(filteredCodeList.length == 1){
+                    if(filteredCodeList.length == 1){
                         const result = {
                             btn : "",
                             data : {
@@ -346,11 +328,7 @@ export default {
                         codeList  : JSON.parse(JSON.stringify(codeList)), 
                     } 
                     const filteredCodeList = await findCode(param)
-                    if(filteredCodeList.length == 0){
-                        args.inputObjs.edCode.value = ''
-                        args.inputObjs.edName.value = ''
-                        args.inputObjs.edCodeName.value = ''
-                    } else if(filteredCodeList.length == 1){
+                    if(filteredCodeList.length == 1){
                         const result = {
                             btn : "",
                             data : {
@@ -387,11 +365,7 @@ export default {
                     } 
                     const filteredCodeList = await findCode(param)
                     
-                    if(filteredCodeList.length == 0){
-                        args.inputObjs.edCode.value = ''
-                        args.inputObjs.edName.value = ''
-                        args.inputObjs.edCodeName.value = ''
-                    } else if(filteredCodeList.length == 1){
+                    if(filteredCodeList.length == 1){
                         const result = {
                             btn : "",
                             data : {
@@ -421,11 +395,7 @@ export default {
                     } 
                     const filteredCodeList = await findCode(param)
                     
-                    if(filteredCodeList.length == 0){
-                        args.inputObjs.edCode.value = ''
-                        args.inputObjs.edName.value = ''
-                        args.inputObjs.edCodeName.value = ''
-                    } else if(filteredCodeList.length == 1){
+                    if(filteredCodeList.length == 1){
                         const result = {
                             btn : "",
                             data : {

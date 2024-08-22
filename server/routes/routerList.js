@@ -19,10 +19,11 @@ module.exports = [
         url : "/getCodeList",
         controllerPath : path.join(PROJECT_ROOT, 'src', 'getCodeList', 'getCodeListController'),
     } ,
-    
+    /*
     {
         url : "/getCodeList/:param",
         controllerPath : path.join(PROJECT_ROOT, 'src', 'getCodeList', 'getCodeListController'),
     } 
+        */
 ]
 
