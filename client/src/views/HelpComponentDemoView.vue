@@ -59,19 +59,9 @@
 
 <script>
 
-// npm install tabulator-tables
-// import {TabulatorFull as Tabulator} from 'tabulator-tables';
-// npm install ag-grid-vue3 ag-grid-community
-// import { AgGridVue } from "ag-grid-vue3"; // Vue Data Grid Component
-// import { AgGridVue } from "ag-grid-vue3"; // Ag-Grid API
-
 export default {
 
   name: 'HelpComponentDemoView',
-
-  components: {
-//    AgGridVue, // Add Vue Data Grid component
-  },
 
   data : function() {
     return {
@@ -101,6 +91,7 @@ export default {
       },
       popupObjs   : {
         popup     : this.$refs.codeHelpDialog,
+        gridKind  : 'AgGrid',
         gridContainer:this.$refs.cntrCodeHelpDialog,
         btnOk     : this.$refs.btnOk,
         btnCancel : this.$refs.btnCancel,
@@ -133,6 +124,7 @@ export default {
       },
       popupObjs   : {
         popup     : this.$refs.codeHelpDialog,
+        gridKind  : 'Tabulator',
         gridContainer:this.$refs.cntrCodeHelpDialog,
         btnOk     : this.$refs.btnOk,
         btnCancel : this.$refs.btnCancel,
@@ -155,9 +147,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-
-  @import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
-  @import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
 
   .modal {
       background: antiquewhite;

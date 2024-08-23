@@ -1,6 +1,38 @@
 
 import axios from 'axios'
+// npm install tabulator-tables
+import {TabulatorFull as Tabulator} from 'tabulator-tables'
+import 'tabulator-tables/dist/css/tabulator_midnight.min.css'
+/*
+import 'tabulator-tables/dist/css/tabulator_bootstrap3.css'
+import 'tabulator-tables/dist/css/tabulator_bootstrap3.min.css'
+import 'tabulator-tables/dist/css/tabulator_bootstrap4.css'
+import 'tabulator-tables/dist/css/tabulator_bootstrap4.min.css'
+import 'tabulator-tables/dist/css/tabulator_bootstrap5.css'
+import 'tabulator-tables/dist/css/tabulator_bootstrap5.min.css'
+import 'tabulator-tables/dist/css/tabulator_bulma.css'
+import 'tabulator-tables/dist/css/tabulator_bulma.min.css'
+import 'tabulator-tables/dist/css/tabulator_materialize.css'
+import 'tabulator-tables/dist/css/tabulator_materialize.min.css'
+import 'tabulator-tables/dist/css/tabulator_midnight.css'
+import 'tabulator-tables/dist/css/tabulator_midnight.min.css'
+import 'tabulator-tables/dist/css/tabulator_modern.css'
+import 'tabulator-tables/dist/css/tabulator_modern.min.css'
+import 'tabulator-tables/dist/css/tabulator_semanticui.css'
+import 'tabulator-tables/dist/css/tabulator_semanticui.min.css'
+import 'tabulator-tables/dist/css/tabulator_simple.css'
+import 'tabulator-tables/dist/css/tabulator_simple.min.css'
+import 'tabulator-tables/dist/css/tabulator_site_dark.css'
+import 'tabulator-tables/dist/css/tabulator_site_dark.min.css'
+import 'tabulator-tables/dist/css/tabulator_site.css'
+import 'tabulator-tables/dist/css/tabulator_site.min.css'
+import 'tabulator-tables/dist/css/tabulator.css'
+import 'tabulator-tables/dist/css/tabulator.min.css'
+*/
+// npm install ag-grid-vue3 ag-grid-community
 import {createGrid} from 'ag-grid-community'
+import 'ag-grid-community/styles/ag-grid.css'; // 필수 CSS
+import 'ag-grid-community/styles/ag-theme-quartz.css'; // 선택적 테마
 export default {
     install(app){
 
@@ -22,6 +54,7 @@ export default {
                     popupObjs : {
                         popup,       // dialog테그 객체
                         gridContainer, // 그리드 컨테이너
+                        gridKind,    // 그리드 종류 (AgGrid / Tabulator)
                         btnClose,    // 팝업창의 우측 상단 [x] 버튼 객체
                         btnOk,       // 팝업창의 [선택]버튼 객체
                         btnCancel    // 팝업창의 [취소]버튼 객채
@@ -75,7 +108,11 @@ export default {
                 const popupEvents = {
                     onSelected : (param /* {btn, data={code, name, codeName}} */) => {
                         if(grid){
-                            grid.api.destroy()
+                            if(args.popupObjs.gridKind.toUpperCase() == 'AgGrid'.toUpperCase()){
+                                grid.api.destroy()
+                            } else if(args.popupObjs.gridKind.toUpperCase() == 'Tabulator'.toUpperCase()){
+                                grid.destroy()
+                            }
                             grid = null
                             while (args.popupObjs.gridContainer.firstChild) {
                                 args.popupObjs.gridContainer.removeChild(args.popupObjs.gridContainer.firstChild);
@@ -142,7 +179,12 @@ export default {
                                 codeName : "",
                             },
                         }
-                        const selectedDatas = grid.api.getSelectedRows()
+                        let selectedDatas = {}
+                        if(args.popupObjs.gridKind.toUpperCase() == 'AgGrid'.toUpperCase()){
+                            selectedDatas = grid.api.getSelectedRows()
+                        } else if(args.popupObjs.gridKind.toUpperCase() == 'Tabulator'.toUpperCase()){
+                            selectedDatas = grid.getSelectedData();
+                        }
                         if(selectedDatas.length > 0){
                             result.data = selectedDatas[0]
                         }
@@ -153,7 +195,6 @@ export default {
                         args.popupObjs.btnClose.removeEventListener('click', popupEvents.onBtnCloseClick)
                         args.popupObjs.btnCancel.removeEventListener('click', popupEvents.onBtnCancelClick)
                         args.popupObjs.btnOk.removeEventListener('click', popupEvents.onBtnOkClick)
- //                       grid.removeEventListener('rowDoubleClicked' , popupEvents.rowDblClick)
                     },
 
                 }
@@ -218,27 +259,52 @@ export default {
                     // --------------------------------------------------------------
                     // 코드 조회 함수 선언 - 팝업창 OPEN
                     // --------------------------------------------------------------
-                    grid = await new Promise((resolve)=>{
-                        const columnDefs=[
-                            { field: 'idx'      , headerName: '번호', flex: 1},
-                            { field: 'code'     , headerName: '코드', flex: 1},
-                            { field: 'name'     , headerName: '이름', flex: 1},
-                            { field: 'codeName' , headerName: '비고', flex: 2},
-                        ]
-                        const gridOptions = {
-                            columnDefs      : columnDefs,
-                            rowData         : JSON.parse(JSON.stringify(filteredCodeList)),
-                            rowSelection    :'single',
-                            onGridReady: (params) => {
-                                params.api.sizeColumnsToFit();
-                                params.api.addEventListener('rowDoubleClicked', popupEvents.rowDblClick)
-                                resolve(params)
+                    if(args.popupObjs.gridKind.toUpperCase() == 'AgGrid'.toUpperCase()){
+                        grid = await new Promise((resolve)=>{
+                            const gridOptions = {
+                                columnDefs      : [
+                                    { field: 'idx'      , headerName: '번호', flex: 1},
+                                    { field: 'code'     , headerName: '코드', flex: 1},
+                                    { field: 'name'     , headerName: '이름', flex: 1},
+                                    { field: 'codeName' , headerName: '비고', flex: 2},
+                                ],
+                                rowData         : JSON.parse(JSON.stringify(filteredCodeList)),
+                                rowSelection    :'single',
+                                onGridReady     : (params) => {
+                                    params.api.sizeColumnsToFit();
+                                    params.api.addEventListener('rowDoubleClicked', popupEvents.rowDblClick)
+                                    resolve(params)
+                                }
+                            };
+                            args.popupObjs.gridContainer.classList.add('ag-theme-quartz')
+                            args.popupObjs.gridContainer.style.height = "500px"
+                            createGrid(args.popupObjs.gridContainer, gridOptions);
+                        })
+
+                    } else if(args.popupObjs.gridKind.toUpperCase() == 'Tabulator'.toUpperCase()){
+                            const gridOptions = {
+                                columns :[
+                                    {title:"번호", field:"idx"},
+                                    {title:"코드", field:"code"},
+                                    {title:"이름", field:"name"},
+                                    {title:"비고", field:"codeName"},
+                                ],
+                                height  : 500,
+                                data    : JSON.parse(JSON.stringify(filteredCodeList)),
+                                layout  : "fitColumns",
+                                selectableRange:true,
+                                rowDblClick: function(e, row) {
+                                    debugger;
+                                    const rowData = row.getData();
+                                    const result = {
+                                        btn : "ok",
+                                        data : rowData,
+                                    }
+                                    popupEvents.onSelected(result);
+                                }
                             }
-                        };
-                        args.popupObjs.gridContainer.classList.add('ag-theme-quartz')
-                        args.popupObjs.gridContainer.style.height = "500px"
-                        createGrid(args.popupObjs.gridContainer, gridOptions);
-                    })
+                            grid = new Tabulator(args.popupObjs.gridContainer, gridOptions);
+                    }
                     // --------------------------------------------------------------
                     // 코드 조회 함수 선언 - 팝업창에서 사용할 이벤트 설정
                     // --------------------------------------------------------------
@@ -417,6 +483,7 @@ export default {
     }
 
 }
+
 
 /* ========================================================================== *
 /* SAMPLE CODE 
