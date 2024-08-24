@@ -3,7 +3,7 @@ import App from './App.vue';
 import router from './router';
 import store from './store';
 import helpComponent from '@/utils/HelpComponent.js';
-import commonUtil from '@/utils/CommonUtil.js';
+import commonUtil from '@/utils/CommonUtils.js';
 
 createApp(App)
     .use(store)
