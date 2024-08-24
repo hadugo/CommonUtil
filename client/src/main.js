@@ -3,11 +3,11 @@ import App from './App.vue';
 import router from './router';
 import store from './store';
 import helpComponent from '@/utils/HelpComponent.js';
-import commonUtil from '@/utils/CommonUtils.js';
+import commonUtils from '@/utils/CommonUtils.js';
 
 createApp(App)
     .use(store)
     .use(router)
     .use(helpComponent)
-    .use(commonUtil)
+    .use(commonUtils)
     .mount('#app');

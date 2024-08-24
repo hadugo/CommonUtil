@@ -1,3 +1,6 @@
+/* ========================================================================== *
+ * CommonUtils.js
+ * ========================================================================== */
 export default {
     install(app){
         app.config.globalProperties.$commonUtils = {
@@ -10,13 +13,13 @@ export default {
             isNvl : function(value, replacer){
                 const result = this.isNull(value) ? replacer : value
                 return result
-            },
+            }
         }
     }
 }
 /* ========================================================================== *
-/* SAMPLE CODE 
-/* ========================================================================== *
+ * SAMPLE CODE 
+ * ========================================================================== *
 
 
 // --------------------------------------------------------------------------
@@ -26,7 +29,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import store from './store'
-import commonUtil from '@/utils/CommonUtils.js'; // 추가
+import commonUtil from '@/utils/CommonUtils.js';
 
 createApp(App)
     .use(store)
@@ -34,4 +37,3 @@ createApp(App)
     .use(commonUtils) // 추가
     .mount('#app')
  * ========================================================================== */
-
