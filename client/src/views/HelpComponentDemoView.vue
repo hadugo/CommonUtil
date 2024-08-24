@@ -83,6 +83,8 @@ export default {
   mounted : function() {
     let param = {}
     param = {
+      codeList  : null,
+      /*
       codeList  : [
         { code : "D011", name : "관리부" },
         { code : "D012", name : "영업부" },
@@ -91,6 +93,7 @@ export default {
         { code : "D022", name : "생산1부" },
         { code : "D023", name : "생산2부" },
       ],
+      */
       postUrl : 'http://localhost:3000/getCodeList/DEPT', // codeList가 없는 경우 코드 조회를 위한 URL
       inputObjs : {
         edCode    : this.$refs.edDeptCodeRef, 
@@ -116,12 +119,15 @@ export default {
     this.$helpComponent.initial(param)
     
     param = {
+      codeList  : null,
+      /*
       codeList  : [
         { code : "T011", name : "대표" },
         { code : "T012", name : "부장" },
         { code : "T021", name : "과장" },
         { code : "T022", name : "사원" },
       ],
+      */
       postUrl : 'http://localhost:3000/getCodeList?codeType=TITL',
       postParam : {codeType  : 'TITL', },
       inputObjs : {
