@@ -2,7 +2,7 @@
 import axios from 'axios'
 // npm install tabulator-tables
 import {TabulatorFull as Tabulator} from 'tabulator-tables'
-import 'tabulator-tables/dist/css/tabulator_midnight.min.css'
+import 'tabulator-tables/dist/css/tabulator.css'
 /*
 import 'tabulator-tables/dist/css/tabulator_bootstrap3.css'
 import 'tabulator-tables/dist/css/tabulator_bootstrap3.min.css'
@@ -123,7 +123,7 @@ export default {
                             args.popupObjs.popup.close()
                         }
                         
-                        if(param.btn == "ok")  {
+                        if(param.btn === "ok" || param.btn === "row")  {
                             args.inputObjs.edCode.value = param.data.code
                             args.inputObjs.edName.value = param.data.name
                             args.inputObjs.edCodeName.value = param.data.codeName
@@ -132,11 +132,11 @@ export default {
                             args.callback(param, args)
                         }
                     },
-                    rowDblClick : (event) => {
+                    rowDblClick : (data) => {
                         popupEvents.clearEvents()
                         const result = {
-                            btn : "ok",
-                            data : event.data,
+                            btn : "row",
+                            data : data,
                         }
                         popupEvents.onSelected(result)
                     },
@@ -272,7 +272,11 @@ export default {
                                 rowSelection    :'single',
                                 onGridReady     : (params) => {
                                     params.api.sizeColumnsToFit();
-                                    params.api.addEventListener('rowDoubleClicked', popupEvents.rowDblClick)
+                                    params.api.addEventListener('rowDoubleClicked', function(event){
+                                                                                        const data = event.data
+                                                                                        popupEvents.rowDblClick(data)
+                                                                                    }
+                                    )
                                     resolve(params)
                                 }
                             };
@@ -291,19 +295,17 @@ export default {
                                 ],
                                 height  : 500,
                                 data    : JSON.parse(JSON.stringify(filteredCodeList)),
+                                selectableRows : 1,
+                                selectableRangeMode : 'click',
+                                selectableRowsRollingSelection : true,
                                 layout  : "fitColumns",
-                                selectableRange:true,
-                                rowDblClick: function(e, row) {
-                                    debugger;
-                                    const rowData = row.getData();
-                                    const result = {
-                                        btn : "ok",
-                                        data : rowData,
-                                    }
-                                    popupEvents.onSelected(result);
-                                }
                             }
                             grid = new Tabulator(args.popupObjs.gridContainer, gridOptions);
+                            grid.on("rowDblClick", function(e, row){
+                                                        const data = row.getData()
+                                                        popupEvents.rowDblClick(data)
+                                                    }
+                            )
                     }
                     // --------------------------------------------------------------
                     // 코드 조회 함수 선언 - 팝업창에서 사용할 이벤트 설정
