@@ -85,7 +85,7 @@ export default {
       ],
       */
       postUrl : 'http://localhost:3000/getCodeList/DEPT', // codeList가 없는 경우 코드 조회를 위한 URL
-      inputObjs : {
+      formObjs : {
         edCode    : this.$refs.edDeptCodeRef, 
         edName    : this.$refs.edDeptNameRef, 
         edCodeName: this.$refs.edDeptCodeNameRef,
@@ -100,10 +100,9 @@ export default {
         btnCancel : this.$refs.btnCancel,
         btnClose  : this.$refs.btnClose,
       },
-      callback  : (param)=>{
-        const {btn, data} = param
-        const {code, name, codeName} = data
-        alert(`${btn}\n${code} : ${name}\n${codeName}`)
+      callback  : (param, arg)=>{
+        console.log(param)
+        console.log(arg)
       },
 
     }
@@ -121,7 +120,7 @@ export default {
       */
       postUrl : 'http://localhost:3000/getCodeList?codeType=TITL',
       postParam : {codeType  : 'TITL', },
-      inputObjs : {
+      formObjs : {
         edCode    : this.$refs.edTitlCodeRef, 
         edName    : this.$refs.edTitlNameRef, 
         edCodeName: this.$refs.edTitlCodeNameRef,
@@ -136,10 +135,9 @@ export default {
         btnCancel : this.$refs.btnCancel,
         btnClose  : this.$refs.btnClose,
       },
-      callback  : (param)=>{
-        const {btn, data} = param
-        const {code, name, codeName} = data
-        alert(`${btn}\n${code}\n${name}\n${codeName}`)
+      callback  : (param, arg)=>{
+        console.log(param)
+        console.log(arg)
       },
 
     }

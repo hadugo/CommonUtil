@@ -63,49 +63,103 @@ export default {
                 }
                 */
 
-                // //////////////////////////////////////////////////////////////
-                //
-                // 각종 함수 선언
-                //
-                // //////////////////////////////////////////////////////////////
-
                 let codeList = null
                 let grid = null
                 
-                let getCodeList = async function(){
-                    if(args.codeList && args.codeList.length > 0){
-                        args.codeList.forEach((item, index) => {
+                // //////////////////////////////////////////////////////////////
+                //
+                // 데이터 관련 함수 선언
+                //
+                // //////////////////////////////////////////////////////////////
+                const data = {
+                    // ..........................................................
+                    // data.getCodeList : 도움말에 사용할 코드목록 조회 함수
+                    // ..........................................................
+                    getCodeList : async function(){
+                        if(args.codeList && args.codeList.length > 0){
+                            args.codeList.forEach((item, index) => {
+                                item.idx = index;
+                                if(!item.codeName){
+                                    item.codeName = `[ ${item.code} ] ${item.name} `
+                                }
+                            });
+                            return args.codeList
+                        }
+    
+                        let result = null
+                        try{
+                            const response = await axios.get(args.postUrl)
+                            result = response.data.resData
+                        } catch(error){
+                            console.log(error)
+                            return null // 오류 발
+                        }
+                        
+                        result.forEach((item, index) => {
                             item.idx = index;
                             if(!item.codeName){
                                 item.codeName = `[ ${item.code} ] ${item.name} `
                             }
                         });
-                        return args.codeList
-                    }
-
-                    let result = null
-                    try{
-                        const response = await axios.get(args.postUrl)
-                        result = response.data.resData
-                    } catch(error){
-                        console.log(error)
-                        return null // 오류 발
-                    }
+    
+                        return result
+                    },
                     
-                    result.forEach((item, index) => {
-                        item.idx = index;
-                        if(!item.codeName){
-                            item.codeName = `[ ${item.code} ] ${item.name} `
+                    // ..........................................................
+                    // data.findCode : 팝업창에 사용할 코드 목록 필터링 함수 선언
+                    // ..........................................................
+                    findCode : async (param /* {code, name, codeName, codeList} */ )=>{
+                        if(!codeList) return []
+                        if(codeList.length == 0) return []
+                        const paramCode     = param.code      ? param.code.toUpperCase()  : ''
+                        const paramName     = param.name      ? param.name.toUpperCase()  : ''
+                        const paramCodeName = param.codeName  ? param.codeName.toUpperCase()  : ''
+                        
+                        let filteredCodeList = codeList.filter(
+                            (ele) => {
+                                const eleCode     = ele.code      ? ele.code.toUpperCase()      : ''
+                                const eleName     = ele.name      ? ele.name.toUpperCase()      : ''
+                                const eleCodeName = ele.codeName  ? ele.codeName.toUpperCase()  : ''
+                                if(paramCode){
+                                    const idx = eleCode.indexOf(paramCode)
+                                    const result = idx >= 0
+                                    return result
+                                }
+                                if(paramName){
+                                    const idx = eleName.indexOf(paramName)
+                                    const result = idx >= 0
+                                    return result
+                                }
+                                if(paramCodeName){
+                                    const idx = eleCodeName.indexOf(paramCodeName)
+                                    const result = idx >= 0
+                                    return result
+                                }
+                            }
+                        )
+                        
+                        if(filteredCodeList.length == 0){
+                            filteredCodeList = JSON.parse(JSON.stringify(param.codeList))
                         }
-                    });
 
-                    return result
+                        filteredCodeList.forEach((item, index) => {
+                            item.idx = index; // 원본 배열의 각 항목에 idx 속성 추가
+                        });
+
+                        return filteredCodeList;
+                        
+                    }
                 }
 
-                // ..............................................................
-                // 팝업창에서 사용할 각종 이벤트 함수 선언
-                // ..............................................................
-                const popupEvents = {
+                // //////////////////////////////////////////////////////////////
+                //
+                // 팝업창 및 팝업창 내부 객체 관련 함수 선언
+                //
+                // //////////////////////////////////////////////////////////////
+                const popup = {
+                    // ..........................................................
+                    // popup.onSelected : 그리드에서 코드가 선택되면 실행할 함수
+                    // ..........................................................
                     onSelected : (param /* {btn, data={code, name, codeName}} */) => {
                         if(grid){
                             if(args.popupObjs.gridKind.toUpperCase() == 'AgGrid'.toUpperCase()){
@@ -123,61 +177,57 @@ export default {
                             args.popupObjs.popup.close()
                         }
                         
-                        if(param.btn === "ok" || param.btn === "row")  {
-                            args.inputObjs.edCode.value = param.data.code
-                            args.inputObjs.edName.value = param.data.name
-                            args.inputObjs.edCodeName.value = param.data.codeName
+                        if(param.data)  {
+                            args.formObjs.edCode.value = param.data.code
+                            args.formObjs.edName.value = param.data.name
+                            args.formObjs.edCodeName.value = param.data.codeName
                         }
                         if(args.callback){
                             args.callback(param, args)
                         }
                     },
+                    // ..........................................................
+                    // popup.rowDblClick : 그리드의 행 더블클릭 이벤트
+                    // ..........................................................
                     rowDblClick : (data) => {
-                        popupEvents.clearEvents()
+                        popup.clearEvents()
                         const result = {
                             btn : "row",
                             data : data,
                         }
-                        popupEvents.onSelected(result)
+                        popup.onSelected(result)
                     },
                     
+                    // ..........................................................
+                    // popup.onBtnCloseClick : 팝업창의 닫기 버튼 클릭 이벤트
+                    // ..........................................................
                     onBtnCloseClick : ()=>{
-                        popupEvents.clearEvents()
+                        popup.clearEvents()
                         const result = {
                             btn  : "close",
-                            data : {
-                                code : '',
-                                name : '',
-                                codeName : '',
-                            },
-                            callback : args.callback
                         }
-                        popupEvents.onSelected(result)
+                        popup.onSelected(result)
                     },
 
+                    // ..........................................................
+                    // popup.onBtnCancelClick : 팝업창의 취소 버튼 클릭 이벤트
+                    // ..........................................................
                     onBtnCancelClick : ()=>{
-                        popupEvents.clearEvents()
+                        popup.clearEvents()
                         const result = {
                             btn  : "cancel",
-                            data : {
-                                code : '',
-                                name : '',
-                                codeName : '',
-                            },
-                            callback : args.callback
                         }
-                        popupEvents.onSelected(result)
+                        popup.onSelected(result)
                     },
                     
+                    // ..........................................................
+                    // popup.onBtnOkClick : 팝업창의 확인 버튼 클릭 이벤트
+                    // ..........................................................
                     onBtnOkClick : ()=>{
-                        popupEvents.clearEvents()
+                        popup.clearEvents()
                         const result = {
                             btn  : "ok",
-                            data : {
-                                code : "",
-                                name : "",
-                                codeName : "",
-                            },
+                            data : null,
                         }
                         let selectedDatas = {}
                         if(args.popupObjs.gridKind.toUpperCase() == 'AgGrid'.toUpperCase()){
@@ -188,104 +238,53 @@ export default {
                         if(selectedDatas.length > 0){
                             result.data = selectedDatas[0]
                         }
-                        popupEvents.onSelected(result)
+                        popup.onSelected(result)
                     },
                     
+                    // ..........................................................
+                    // popup.clearEvents : 팝업창 버튼 이벤트 초기화
+                    // ..........................................................
                     clearEvents : ()=>{
-                        args.popupObjs.btnClose.removeEventListener('click', popupEvents.onBtnCloseClick)
-                        args.popupObjs.btnCancel.removeEventListener('click', popupEvents.onBtnCancelClick)
-                        args.popupObjs.btnOk.removeEventListener('click', popupEvents.onBtnOkClick)
+                        args.popupObjs.btnClose.removeEventListener('click', popup.onBtnCloseClick)
+                        args.popupObjs.btnCancel.removeEventListener('click', popup.onBtnCancelClick)
+                        args.popupObjs.btnOk.removeEventListener('click', popup.onBtnOkClick)
                     },
 
-                }
+                    // ..........................................................
+                    // popup.showModal : 팝업창을 modal로 여는 함수
+                    // ..........................................................
+                    showModal : async function(filteredCodeList){
+                        if(!filteredCodeList) return
+                        if(filteredCodeList.length == 0) return
+                        if(args.popupObjs.gridKind.toUpperCase() == 'AgGrid'.toUpperCase()){
+                            // popup.showModal - 팝업창에 AgGrid를 생성한다.
+                            grid = await new Promise((resolve)=>{
+                                const gridOptions = {
+                                    columnDefs      : [
+                                        { field: 'idx'      , headerName: '번호', flex: 1},
+                                        { field: 'code'     , headerName: '코드', flex: 1},
+                                        { field: 'name'     , headerName: '이름', flex: 1},
+                                        { field: 'codeName' , headerName: '비고', flex: 2},
+                                    ],
+                                    rowData         : JSON.parse(JSON.stringify(filteredCodeList)),
+                                    rowSelection    :'single',
+                                    onGridReady     : (params) => {
+                                        params.api.sizeColumnsToFit();
+                                        params.api.addEventListener('rowDoubleClicked', function(event){
+                                                                                            const data = event.data
+                                                                                            popup.rowDblClick(data)
+                                                                                        }
+                                        )
+                                        resolve(params)
+                                    }
+                                };
+                                args.popupObjs.gridContainer.classList.add('ag-theme-quartz')
+                                args.popupObjs.gridContainer.style.height = "500px"
+                                createGrid(args.popupObjs.gridContainer, gridOptions);
+                            })
 
-                // ..............................................................
-                // 팝업창에 사용할 코드 목록 필터링 함수 선언
-                // ..............................................................
-                const findCode = async (param /* {code, name, codeName, codeList} */ )=>{
-                    if(!codeList) return []
-                    if(codeList.length == 0) return []
-                    const paramCode     = param.code      ? param.code.toUpperCase()  : ''
-                    const paramName     = param.name      ? param.name.toUpperCase()  : ''
-                    const paramCodeName = param.codeName  ? param.codeName.toUpperCase()  : ''
-                    // --------------------------------------------------------------
-                    // 코드 조회 함수 선언 - 코드목록에서 조건에 맞는 코드를 검사하여 목록 재구성
-                    // --------------------------------------------------------------
-                    let filteredCodeList = codeList.filter(
-                        (ele) => {
-                            const eleCode     = ele.code      ? ele.code.toUpperCase()      : ''
-                            const eleName     = ele.name      ? ele.name.toUpperCase()      : ''
-                            const eleCodeName = ele.codeName  ? ele.codeName.toUpperCase()  : ''
-                            if(paramCode){
-                                const idx = eleCode.indexOf(paramCode)
-                                const result = idx >= 0
-                                return result
-                            }
-                            if(paramName){
-                                const idx = eleName.indexOf(paramName)
-                                const result = idx >= 0
-                                return result
-                            }
-                            if(paramCodeName){
-                                const idx = eleCodeName.indexOf(paramCodeName)
-                                const result = idx >= 0
-                                return result
-                            }
-                        }
-                    )
-                    
-                    
-                    // --------------------------------------------------------------
-                    // 코드 조회 함수 선언 - 조건에 맞는 코드가 없으면 모든 코드 목록
-                    // --------------------------------------------------------------
-                    if(filteredCodeList.length == 0){
-                        filteredCodeList = JSON.parse(JSON.stringify(param.codeList))
-                    }
-
-                    filteredCodeList.forEach((item, index) => {
-                        item.idx = index; // 원본 배열의 각 항목에 idx 속성 추가
-                    });
-
-                    return filteredCodeList;
-                    
-                }
-
-                // ..............................................................
-                // 팝업창을 열기 위한 함수 선언
-                // ..............................................................
-                const showModal = async function(filteredCodeList){
-                    if(!filteredCodeList) return
-                    if(filteredCodeList.length == 0) return
-                    // --------------------------------------------------------------
-                    // 코드 조회 함수 선언 - 팝업창 OPEN
-                    // --------------------------------------------------------------
-                    if(args.popupObjs.gridKind.toUpperCase() == 'AgGrid'.toUpperCase()){
-                        grid = await new Promise((resolve)=>{
-                            const gridOptions = {
-                                columnDefs      : [
-                                    { field: 'idx'      , headerName: '번호', flex: 1},
-                                    { field: 'code'     , headerName: '코드', flex: 1},
-                                    { field: 'name'     , headerName: '이름', flex: 1},
-                                    { field: 'codeName' , headerName: '비고', flex: 2},
-                                ],
-                                rowData         : JSON.parse(JSON.stringify(filteredCodeList)),
-                                rowSelection    :'single',
-                                onGridReady     : (params) => {
-                                    params.api.sizeColumnsToFit();
-                                    params.api.addEventListener('rowDoubleClicked', function(event){
-                                                                                        const data = event.data
-                                                                                        popupEvents.rowDblClick(data)
-                                                                                    }
-                                    )
-                                    resolve(params)
-                                }
-                            };
-                            args.popupObjs.gridContainer.classList.add('ag-theme-quartz')
-                            args.popupObjs.gridContainer.style.height = "500px"
-                            createGrid(args.popupObjs.gridContainer, gridOptions);
-                        })
-
-                    } else if(args.popupObjs.gridKind.toUpperCase() == 'Tabulator'.toUpperCase()){
+                        } else if(args.popupObjs.gridKind.toUpperCase() == 'Tabulator'.toUpperCase()){
+                            // popup.showModal - 팝업창에 Tabulator생성한다.
                             const gridOptions = {
                                 columns :[
                                     {title:"번호", field:"idx"},
@@ -303,28 +302,25 @@ export default {
                             grid = new Tabulator(args.popupObjs.gridContainer, gridOptions);
                             grid.on("rowDblClick", function(e, row){
                                                         const data = row.getData()
-                                                        popupEvents.rowDblClick(data)
+                                                        popup.rowDblClick(data)
                                                     }
                             )
-                    }
-                    // --------------------------------------------------------------
-                    // 코드 조회 함수 선언 - 팝업창에서 사용할 이벤트 설정
-                    // --------------------------------------------------------------
-                    // Close Button Click Event
-                    if(args.popupObjs.btnClose){
-                        args.popupObjs.btnClose.addEventListener('click', popupEvents.onBtnCloseClick)
+                        }
+                        // popup.showModal - 팝업창의 버튼 이벤트 설정
+                        if(args.popupObjs.btnClose){
+                            args.popupObjs.btnClose.addEventListener('click', popup.onBtnCloseClick)
+                        }
+
+                        if(args.popupObjs.btnCancel){
+                            args.popupObjs.btnCancel.addEventListener('click', popup.onBtnCancelClick)
+                        }
+
+                        if(args.popupObjs.btnOk){
+                            args.popupObjs.btnOk.addEventListener('click', popup.onBtnOkClick)
+                        }
+                        args.popupObjs.popup.showModal()
                     }
 
-                    // Cancel Button Click Event
-                    if(args.popupObjs.btnCancel){
-                        args.popupObjs.btnCancel.addEventListener('click', popupEvents.onBtnCancelClick)
-                    }
-
-                    // Ok Button Click Event
-                    if(args.popupObjs.btnOk){
-                        args.popupObjs.btnOk.addEventListener('click', popupEvents.onBtnOkClick)
-                    }
-                    args.popupObjs.popup.showModal()
                 }
 
 
@@ -337,29 +333,30 @@ export default {
                 //
                 // //////////////////////////////////////////////////////////////
 
-                codeList = await getCodeList()
-
-                // ==============================================================
+                codeList = await data.getCodeList()
+                
+                // ..............................................................
                 // edCode 이벤트 정의
-                // ==============================================================
-                args.inputObjs.edCode.addEventListener('focus', function(event) {
+                // ..............................................................
+                args.formObjs.edCode.addEventListener('focus', function(event) {
                     event.target.select(); // 포커스 시 텍스트 선택
                 })
 
-                args.inputObjs.edCode.addEventListener("keyup", async (event)=>{
-                    args.inputObjs.edName.value = ''
-                    args.inputObjs.edCodeName.value = ''
-                    if(event.key != 'Enter' && event.target.value.length < args.inputObjs.codeLength){
+                args.formObjs.edCode.addEventListener("keyup", async (event)=>{
+                    args.formObjs.edName.value = ''
+                    args.formObjs.edCodeName.value = ''
+                    if(event.key != 'Enter' && event.target.value.length < args.formObjs.codeLength){
                         return
                     }
                     
                     const param = {
-                        code    : args.inputObjs.edCode.value, 
-                        name    : args.inputObjs.edCode.edName, 
-                        codeName: args.inputObjs.edCode.edCodeName,
+                        code    : args.formObjs.edCode.value, 
+                        name    : args.formObjs.edCode.edName, 
+                        codeName: args.formObjs.edCode.edCodeName,
                         codeList  : JSON.parse(JSON.stringify(codeList)), 
                     } 
-                    const filteredCodeList = await findCode(param)
+                    const filteredCodeList = await data.findCode(param)
+                    
                     if(filteredCodeList.length == 1){
                         const result = {
                             btn : "",
@@ -369,33 +366,33 @@ export default {
                                 codeName: filteredCodeList[0].codeName,
                             }
                         }
-                        popupEvents.onSelected(result)
+                        popup.onSelected(result)
                         return result
                     }
-                    showModal(filteredCodeList)
+                    popup.showModal(filteredCodeList)
                 })
 
-                // ==============================================================
+                // ..............................................................
                 // edName 이벤트 정의
-                // ==============================================================
-                args.inputObjs.edName.addEventListener('focus', function(event) {
+                // ..............................................................
+                args.formObjs.edName.addEventListener('focus', function(event) {
                     event.target.select(); // 포커스 시 텍스트 선택
                 })
 
-                args.inputObjs.edName.addEventListener("keyup", async (event)=>{
-                    args.inputObjs.edCode.value = ''
-                    args.inputObjs.edCodeName.value = ''
+                args.formObjs.edName.addEventListener("keyup", async (event)=>{
+                    args.formObjs.edCode.value = ''
+                    args.formObjs.edCodeName.value = ''
 
                     if(event.key != 'Enter'){
                         return
                     }
                     const param = {
-                        code    : args.inputObjs.edCode.value, 
-                        name    : args.inputObjs.edName.value, 
-                        codeName: args.inputObjs.edCodeName.value,
+                        code    : args.formObjs.edCode.value, 
+                        name    : args.formObjs.edName.value, 
+                        codeName: args.formObjs.edCodeName.value,
                         codeList  : JSON.parse(JSON.stringify(codeList)), 
                     } 
-                    const filteredCodeList = await findCode(param)
+                    const filteredCodeList = await data.findCode(param)
                     if(filteredCodeList.length == 1){
                         const result = {
                             btn : "",
@@ -405,33 +402,33 @@ export default {
                                 codeName: filteredCodeList[0].codeName,
                             }
                         }
-                        popupEvents.onSelected(result)
+                        popup.onSelected(result)
                         return result
                     }
-                    showModal(filteredCodeList)
+                    popup.showModal(filteredCodeList)
                 })
 
-                // ==============================================================
+                // ..............................................................
                 // edCodeName 이벤트 정의
-                // ==============================================================
-                args.inputObjs.edCodeName.addEventListener('focus', function(event) {
+                // ..............................................................
+                args.formObjs.edCodeName.addEventListener('focus', function(event) {
                     event.target.select(); // 포커스 시 텍스트 선택
                 })
 
-                args.inputObjs.edCodeName.addEventListener("keyup", async (event)=>{
-                    args.inputObjs.edCode.value = ''
-                    args.inputObjs.edName.value = ''
+                args.formObjs.edCodeName.addEventListener("keyup", async (event)=>{
+                    args.formObjs.edCode.value = ''
+                    args.formObjs.edName.value = ''
 
                     if(event.key != 'Enter'){
                         return
                     }
                     const param = {
-                        code    : args.inputObjs.edCode.value, 
-                        name    : args.inputObjs.edName.value, 
-                        codeName: args.inputObjs.edCodeName.value, 
+                        code    : args.formObjs.edCode.value, 
+                        name    : args.formObjs.edName.value, 
+                        codeName: args.formObjs.edCodeName.value, 
                         codeList: JSON.parse(JSON.stringify(codeList)), 
                     } 
-                    const filteredCodeList = await findCode(param)
+                    const filteredCodeList = await data.findCode(param)
                     
                     if(filteredCodeList.length == 1){
                         const result = {
@@ -442,26 +439,26 @@ export default {
                                 codeName: filteredCodeList[0].codeName,
                             }
                         }
-                        popupEvents.onSelected(result)
+                        popup.onSelected(result)
                         return result
                     }
-                    showModal(filteredCodeList)
+                    popup.showModal(filteredCodeList)
                 })
 
-                // ==============================================================
+                // ..............................................................
                 // btnSech
-                // ==============================================================
-                args.inputObjs.btnSrch.addEventListener("click", async ()=>{
-                    args.inputObjs.edCode.value = ''
-                    args.inputObjs.edName.value = ''
-                    args.inputObjs.edCodeName.value = ''
+                // ..............................................................
+                args.formObjs.btnSrch.addEventListener("click", async ()=>{
+                    args.formObjs.edCode.value = ''
+                    args.formObjs.edName.value = ''
+                    args.formObjs.edCodeName.value = ''
                     const param = {
-                        code    : args.inputObjs.edCode.value, 
-                        name    : args.inputObjs.edName.value, 
-                        codeName: args.inputObjs.edCodeName.value,
+                        code    : args.formObjs.edCode.value, 
+                        name    : args.formObjs.edName.value, 
+                        codeName: args.formObjs.edCodeName.value,
                         codeList: JSON.parse(JSON.stringify(codeList)), 
                     } 
-                    const filteredCodeList = await findCode(param)
+                    const filteredCodeList = await data.findCode(param)
                     
                     if(filteredCodeList.length == 1){
                         const result = {
@@ -472,10 +469,10 @@ export default {
                                 codeName: filteredCodeList[0].codeName,
                             }
                         }
-                        popupEvents.onSelected(result)
+                        popup.onSelected(result)
                         return result
                     }
-                    showModal(filteredCodeList)
+                    popup.showModal(filteredCodeList)
                 })
             }
         }
